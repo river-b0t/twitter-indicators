@@ -822,13 +822,37 @@ config({ path: ".env.local" })
 
 const prisma = new PrismaClient()
 
-// TODO: Replace with Wally's full account list
 const accounts = [
-  { handle: "unusual_whales", displayName: "Unusual Whales", category: "traders" as const },
-  { handle: "zerohedge", displayName: "ZeroHedge", category: "tradfi" as const },
-  { handle: "woonomic", displayName: "Willy Woo", category: "onchain" as const },
-  { handle: "planb", displayName: "PlanB", category: "crypto" as const },
-  { handle: "kylascan", displayName: "Kyla Scanlon", category: "thematic" as const },
+  // traders
+  { handle: "Tradermayne", displayName: "Mayne", category: "traders" as const },
+  { handle: "cointradernik", displayName: "Nik", category: "traders" as const },
+  { handle: "22loops", displayName: "Looposhi", category: "traders" as const },
+  { handle: "CryptoParadyme", displayName: "Dyme", category: "traders" as const },
+  { handle: "ImTrizzy", displayName: "Trizzy", category: "traders" as const },
+  { handle: "buyerofponzi", displayName: "Ponzi Trader", category: "traders" as const },
+  { handle: "owen1v9", displayName: "owen", category: "traders" as const },
+  { handle: "blknoiz06", displayName: "Ansem", category: "traders" as const },
+  { handle: "filthy555", displayName: "filthy", category: "traders" as const },
+  { handle: "d_gilz", displayName: "David", category: "traders" as const },
+  { handle: "Ritesh_Trades", displayName: "Ritesh", category: "traders" as const },
+  { handle: "c0xswain", displayName: "ML", category: "traders" as const },
+  { handle: "Rob100x", displayName: "Rob", category: "traders" as const },
+  { handle: "RiffRaffOz", displayName: "RiffRaff", category: "traders" as const },
+  { handle: "Crypto_Chase", displayName: "Crypto Chase", category: "traders" as const },
+  // crypto
+  { handle: "cobie", displayName: "Cobie", category: "crypto" as const },
+  { handle: "0xsmac", displayName: "smac", category: "crypto" as const },
+  { handle: "bitmine", displayName: "thorfinn", category: "crypto" as const },
+  { handle: "btceejay", displayName: "hen", category: "crypto" as const },
+  { handle: "badenglishtea", displayName: "badenglishtea", category: "crypto" as const },
+  // tradfi
+  { handle: "abcampbell", displayName: "Campbell", category: "tradfi" as const },
+  { handle: "MacroCRG", displayName: "CRG", category: "tradfi" as const },
+  { handle: "alpinestar17", displayName: "Alpinestar", category: "tradfi" as const },
+  { handle: "BobLoukas", displayName: "Bob Loukas", category: "tradfi" as const },
+  // thematic
+  { handle: "worldsfacing", displayName: "facing worlds", category: "thematic" as const },
+  { handle: "optimist", displayName: "optimist", category: "thematic" as const },
 ]
 
 async function main() {

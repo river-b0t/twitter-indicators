@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Categories: traders, crypto, onchain, vc, tradfi, thematic, builders
+// Multi-tag: accounts can belong to multiple categories
+
+enum Sentiment {
+  bullish
+  bearish
+  neutral
+  mixed
+}
+
+enum DigestStatus {
+  pending
+  complete
+  failed
+}
+
+enum EmailStatus {
+  sent
+  failed
+}
+
+model TwitterAccount {
+  id          String   @id @default(cuid())
+  handle      String   @unique
+  displayName String
+  categories  String[]
+  avatarUrl   String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  tweets      Tweet[]
+  digests     DailyDigest[]
+}
+
+model Tweet {
+  id            String         @id @default(cuid())
+  tweetId       String         @unique
+  accountId     String
+  account       TwitterAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  text          String
+  postedAt      DateTime
+  likesCount    Int            @default(0)
+  retweetsCount Int            @default(0)
+  url           String
+  createdAt     DateTime       @default(now())
+}
+
+model DailyDigest {
+  id          String         @id @default(cuid())
+  accountId   String
+  account     TwitterAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  date        DateTime       @db.Date
+  summary     String?
+  sentiment   Sentiment?
+  tickers     String[]
+  keyTweetIds String[]
+  status      DigestStatus   @default(pending)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([accountId, date])
+}
+
+model DigestEmail {
+  id     String      @id @default(cuid())
+  date   DateTime    @db.Date
+  sentAt DateTime?
+  status EmailStatus
+  error  String?
+}
+
+// NextAuth tables
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

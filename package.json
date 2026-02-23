@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "eslint",
     "seed:user": "tsx scripts/seed-user.ts",
     "seed:accounts": "tsx scripts/seed-accounts.ts",

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, Heart, Repeat2 } from "lucide-react"
+import type { Tweet } from "@prisma/client"
 
 interface Props {
   params: Promise<{ handle: string }>
@@ -62,7 +63,7 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
         {account.tweets.length === 0 ? (
           <p className="text-muted-foreground text-sm">No tweets found for this date.</p>
         ) : (
-          account.tweets.map((tweet) => (
+          account.tweets.map((tweet: Tweet) => (
             <Card key={tweet.id} className={digest?.keyTweetIds.includes(tweet.tweetId) ? "border-primary" : ""}>
               <CardContent className="pt-4 space-y-2">
                 <p className="text-sm">{tweet.text}</p>

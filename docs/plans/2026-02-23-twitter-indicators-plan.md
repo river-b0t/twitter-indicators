@@ -109,14 +109,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum AccountCategory {
-  crypto
-  tradfi
-  onchain
-  traders
-  thematic
-}
-
 enum Sentiment {
   bullish
   bearish
@@ -135,14 +127,16 @@ enum EmailStatus {
   failed
 }
 
+// Categories: traders, crypto, onchain, vc, tradfi, thematic, builders
+// Multi-tag: accounts can belong to multiple categories (String[] not enum)
 model TwitterAccount {
-  id          String          @id @default(cuid())
-  handle      String          @unique
+  id          String   @id @default(cuid())
+  handle      String   @unique
   displayName String
-  category    AccountCategory
+  categories  String[]
   avatarUrl   String?
-  active      Boolean         @default(true)
-  createdAt   DateTime        @default(now())
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
   tweets      Tweet[]
   digests     DailyDigest[]
 }
@@ -809,85 +803,34 @@ git commit -m "feat: add digest pipeline orchestrator and API route"
 ## Task 7: Seed Accounts Script
 
 **Files:**
-- Create: `scripts/seed-accounts.ts`
+- Already exists: `scripts/seed-accounts.ts` (165 accounts, multi-tag `categories: string[]` format)
 
-**Step 1: Write seed script**
-
-`scripts/seed-accounts.ts`:
-```typescript
-import { PrismaClient } from "@prisma/client"
-import { config } from "dotenv"
-
-config({ path: ".env.local" })
-
-const prisma = new PrismaClient()
-
-const accounts = [
-  // traders
-  { handle: "Tradermayne", displayName: "Mayne", category: "traders" as const },
-  { handle: "cointradernik", displayName: "Nik", category: "traders" as const },
-  { handle: "22loops", displayName: "Looposhi", category: "traders" as const },
-  { handle: "CryptoParadyme", displayName: "Dyme", category: "traders" as const },
-  { handle: "ImTrizzy", displayName: "Trizzy", category: "traders" as const },
-  { handle: "buyerofponzi", displayName: "Ponzi Trader", category: "traders" as const },
-  { handle: "owen1v9", displayName: "owen", category: "traders" as const },
-  { handle: "blknoiz06", displayName: "Ansem", category: "traders" as const },
-  { handle: "filthy555", displayName: "filthy", category: "traders" as const },
-  { handle: "d_gilz", displayName: "David", category: "traders" as const },
-  { handle: "Ritesh_Trades", displayName: "Ritesh", category: "traders" as const },
-  { handle: "c0xswain", displayName: "ML", category: "traders" as const },
-  { handle: "Rob100x", displayName: "Rob", category: "traders" as const },
-  { handle: "RiffRaffOz", displayName: "RiffRaff", category: "traders" as const },
-  { handle: "Crypto_Chase", displayName: "Crypto Chase", category: "traders" as const },
-  // crypto
-  { handle: "cobie", displayName: "Cobie", category: "crypto" as const },
-  { handle: "0xsmac", displayName: "smac", category: "crypto" as const },
-  { handle: "bitmine", displayName: "thorfinn", category: "crypto" as const },
-  { handle: "btceejay", displayName: "hen", category: "crypto" as const },
-  { handle: "badenglishtea", displayName: "badenglishtea", category: "crypto" as const },
-  // tradfi
-  { handle: "abcampbell", displayName: "Campbell", category: "tradfi" as const },
-  { handle: "MacroCRG", displayName: "CRG", category: "tradfi" as const },
-  { handle: "alpinestar17", displayName: "Alpinestar", category: "tradfi" as const },
-  { handle: "BobLoukas", displayName: "Bob Loukas", category: "tradfi" as const },
-  // thematic
-  { handle: "worldsfacing", displayName: "facing worlds", category: "thematic" as const },
-  { handle: "optimist", displayName: "optimist", category: "thematic" as const },
-]
-
-async function main() {
-  for (const account of accounts) {
-    await prisma.twitterAccount.upsert({
-      where: { handle: account.handle },
-      update: {},
-      create: account,
-    })
-    console.log(`Seeded @${account.handle}`)
-  }
-}
-
-main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
-```
+**Step 1: Add script to package.json**
 
 Add to `package.json` scripts:
 ```json
 "seed:accounts": "tsx scripts/seed-accounts.ts"
 ```
 
+The script uses the `categories` array format matching the schema:
+```typescript
+{ handle: "DonAlt", displayName: "DonAlt", categories: ["traders", "crypto"] }
+```
+
+The upsert includes `update: { categories: account.categories }` so re-running updates tags.
+
 **Step 2: Run seed**
 
 ```bash
 npm run seed:accounts
 ```
-Expected: logs each seeded account.
+Expected: `Seeded @<handle>` for each of 165 accounts, then `Done. Seeded 165 accounts.`
 
 **Step 3: Commit**
 
 ```bash
-git add scripts/seed-accounts.ts
-git commit -m "feat: add account seed script with placeholder accounts"
+git add package.json
+git commit -m "feat: add seed:accounts npm script"
 ```
 
 ---
@@ -994,7 +937,7 @@ const sentimentColors = {
 interface AccountCardProps {
   handle: string
   displayName: string
-  category: string
+  categories: string[]
   summary: string | null
   sentiment: string | null
   tickers: string[]
@@ -1004,7 +947,7 @@ interface AccountCardProps {
 }
 
 export function AccountCard({
-  handle, displayName, category, summary, sentiment, tickers, tweetCount, date, status
+  handle, displayName, categories, summary, sentiment, tickers, tweetCount, date, status
 }: AccountCardProps) {
   return (
     <Link href={`/dashboard/${handle}?date=${date}`}>
@@ -1053,7 +996,7 @@ export function AccountCard({
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
-const CATEGORIES = ["all", "crypto", "tradfi", "onchain", "traders", "thematic"] as const
+const CATEGORIES = ["all", "traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"] as const
 
 export function CategoryFilter({ active }: { active: string }) {
   const router = useRouter()
@@ -1137,7 +1080,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const accounts = await prisma.twitterAccount.findMany({
     where: {
       active: true,
-      ...(category !== "all" ? { category: category as any } : {}),
+      ...(category !== "all" ? { categories: { hasSome: [category] } } : {}),
     },
     include: {
       digests: { where: { date }, take: 1 },
@@ -1171,7 +1114,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                 key={account.id}
                 handle={account.handle}
                 displayName={account.displayName}
-                category={account.category}
+                categories={account.categories}
                 summary={digest?.summary ?? null}
                 sentiment={digest?.sentiment ?? null}
                 tickers={digest?.tickers ?? []}
@@ -1395,13 +1338,13 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Trash2 } from "lucide-react"
 
-const CATEGORIES = ["crypto", "tradfi", "onchain", "traders", "thematic"]
+const CATEGORIES = ["traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"]
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<any[]>([])
   const [handle, setHandle] = useState("")
   const [displayName, setDisplayName] = useState("")
-  const [category, setCategory] = useState("crypto")
+  const [primaryCategory, setPrimaryCategory] = useState("crypto")
 
   useEffect(() => {
     fetch("/api/accounts").then((r) => r.json()).then(setAccounts)
@@ -1412,7 +1355,8 @@ export default function AccountsPage() {
     const res = await fetch("/api/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ handle, displayName, category }),
+      // categories is an array; start with one primary tag — edit more in DB if needed
+      body: JSON.stringify({ handle, displayName, categories: [primaryCategory] }),
     })
     const newAccount = await res.json()
     setAccounts((a) => [...a, newAccount])
@@ -1448,8 +1392,8 @@ export default function AccountsPage() {
           <Input placeholder="Unusual Whales" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Category</Label>
-          <Select value={category} onValueChange={setCategory}>
+          <Label>Primary Category</Label>
+          <Select value={primaryCategory} onValueChange={setPrimaryCategory}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {CATEGORIES.map((c) => (
@@ -1467,7 +1411,9 @@ export default function AccountsPage() {
             <div className="flex items-center gap-3">
               <span className="font-medium text-sm">@{account.handle}</span>
               <span className="text-sm text-muted-foreground">{account.displayName}</span>
-              <Badge variant="outline" className="capitalize text-xs">{account.category}</Badge>
+              {account.categories.map((c: string) => (
+                <Badge key={c} variant="outline" className="capitalize text-xs">{c}</Badge>
+              ))}
             </div>
             <div className="flex items-center gap-3">
               <Switch
@@ -1519,7 +1465,7 @@ import {
 interface AccountDigest {
   handle: string
   displayName: string
-  category: string
+  categories: string[]
   summary: string
   sentiment: string
   tickers: string[]
@@ -1531,7 +1477,7 @@ interface DigestEmailProps {
   dashboardUrl: string
 }
 
-const CATEGORIES = ["crypto", "tradfi", "onchain", "traders", "thematic"]
+const CATEGORIES = ["traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"]
 
 const sentimentEmoji: Record<string, string> = {
   bullish: "📈",
@@ -1546,8 +1492,9 @@ export function DigestEmail({ date, digests, dashboardUrl }: DigestEmailProps) {
     return acc
   }, {} as Record<string, number>)
 
+  // Group by category — multi-tag accounts appear in each matching section
   const grouped = CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = digests.filter((d) => d.category === cat)
+    acc[cat] = digests.filter((d) => d.categories.includes(cat))
     return acc
   }, {} as Record<string, AccountDigest[]>)
 
@@ -1608,7 +1555,7 @@ export async function sendDailyDigestEmail(
   digests: Array<{
     handle: string
     displayName: string
-    category: string
+    categories: string[]
     summary: string
     sentiment: string
     tickers: string[]
@@ -1643,7 +1590,7 @@ const completedDigests = await prisma.dailyDigest.findMany({
 const emailPayload = completedDigests.map((d) => ({
   handle: d.account.handle,
   displayName: d.account.displayName,
-  category: d.account.category,
+  categories: d.account.categories,
   summary: d.summary!,
   sentiment: d.sentiment!,
   tickers: d.tickers,

@@ -50,7 +50,7 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
             <p className="text-sm">{digest.summary}</p>
             <div className="flex gap-2">
               {digest.sentiment && <Badge>{digest.sentiment}</Badge>}
-              {digest.tickers.map((t) => (
+              {digest.tickers.map((t: string) => (
                 <Badge key={t} variant="outline">{t}</Badge>
               ))}
             </div>

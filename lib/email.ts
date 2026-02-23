@@ -1,7 +1,12 @@
-// Stub — full implementation in Task 12
+import { Resend } from "resend"
+import { DigestEmail } from "@/emails/digest"
+import { format } from "date-fns"
+
+const resend = new Resend(process.env.RESEND_API_KEY!)
+
 export async function sendDailyDigestEmail(
-  _date: Date,
-  _accounts: Array<{
+  date: Date,
+  digests: Array<{
     handle: string
     displayName: string
     categories: string[]
@@ -9,6 +14,14 @@ export async function sendDailyDigestEmail(
     sentiment: string
     tickers: string[]
   }>
-): Promise<void> {
-  throw new Error("Email not yet implemented")
+) {
+  const dateStr = format(date, "EEEE, MMMM d, yyyy")
+  const dashboardUrl = `${process.env.NEXTAUTH_URL}/dashboard?date=${format(date, "yyyy-MM-dd")}`
+
+  await resend.emails.send({
+    from: process.env.RESEND_FROM!,
+    to: process.env.DIGEST_TO!,
+    subject: `Market Digest — ${dateStr}`,
+    react: DigestEmail({ date: dateStr, digests, dashboardUrl }),
+  })
 }

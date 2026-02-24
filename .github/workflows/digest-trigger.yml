@@ -1,0 +1,26 @@
+name: Digest Pipeline Trigger
+
+on:
+  schedule:
+    # Every 5 min, 8 AM–11 AM PT (16:00–18:55 UTC)
+    # Covers 36 triggers — enough to process all ~164 accounts in 33 batches of 5
+    - cron: "*/5 16-18 * * *"
+  workflow_dispatch: # manual trigger
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      TARGET_URL: "https://twitter-indicators.vercel.app/api/digest/run"
+    steps:
+      - name: Trigger digest batch
+        run: |
+          curl -s -o /dev/null \
+            --max-time 10 \
+            -X POST "$TARGET_URL" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+          || true
+          echo "Batch triggered"

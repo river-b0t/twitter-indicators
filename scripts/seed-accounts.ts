@@ -1,9 +1,4 @@
-import { PrismaClient } from "@prisma/client"
-import { config } from "dotenv"
-
-config({ path: ".env.local" })
-
-const prisma = new PrismaClient()
+import { prisma } from "../lib/prisma"
 
 type Account = {
   handle: string

@@ -175,6 +175,7 @@ const accounts: Account[] = [
   { handle: "fejau_inc", displayName: "fejau", categories: ["traders", "crypto", "tradfi", "thematic"] },
   { handle: "GermeyAce", displayName: "Germey", categories: ["builders"] },
   { handle: "0xDeployer", displayName: "0xDeployer", categories: ["builders"] },
+  { handle: "_10delta_", displayName: "10delta", categories: ["crypto"] },
 ]
 
 async function main() {

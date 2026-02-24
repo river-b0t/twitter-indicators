@@ -3,52 +3,87 @@ import { fetchTweetsForAccount } from "./apify"
 import { summarizeAccountTweets } from "./gemini"
 import { startOfDay, subDays } from "date-fns"
 
+const BATCH_SIZE = 5
+
 export async function runDigestPipeline(date: Date = new Date()) {
   const targetDate = startOfDay(date)
   const since = subDays(targetDate, 1)
 
-  const accounts = await prisma.twitterAccount.findMany({
-    where: { active: true },
+  // Find active accounts not yet processed today (no digest or failed)
+  const totalActive = await prisma.twitterAccount.count({ where: { active: true } })
+
+  const processedIds = await prisma.dailyDigest.findMany({
+    where: { date: targetDate, status: { in: ["complete", "pending"] } },
+    select: { accountId: true },
   })
+  const processedSet = new Set(processedIds.map((d) => d.accountId))
+
+  const batch = await prisma.twitterAccount.findMany({
+    where: { active: true, id: { notIn: [...processedSet] } },
+    take: BATCH_SIZE,
+    orderBy: { id: "asc" },
+  })
+
+  // No accounts left to process this run
+  if (batch.length === 0) {
+    return { batch: [], status: "no-op", message: "All accounts already processed today" }
+  }
 
   const results = await Promise.allSettled(
-    accounts.map((account) => processAccount(account, targetDate, since))
+    batch.map((account) => processAccount(account, targetDate, since))
   )
 
-  // Send email after all accounts processed
-  const completedDigests = await prisma.dailyDigest.findMany({
+  // After this batch, check if all accounts are now complete → send email
+  const completedCount = await prisma.dailyDigest.count({
     where: { date: targetDate, status: "complete" },
-    include: { account: true },
   })
 
-  if (completedDigests.length > 0) {
-    const { sendDailyDigestEmail } = await import("./email")
-    const emailPayload = completedDigests.map((d) => ({
-      handle: d.account.handle,
-      displayName: d.account.displayName,
-      categories: d.account.categories,
-      summary: d.summary!,
-      sentiment: d.sentiment!,
-      tickers: d.tickers,
-    }))
+  const isLastBatch = completedCount >= totalActive
+  if (isLastBatch) {
+    const completedDigests = await prisma.dailyDigest.findMany({
+      where: { date: targetDate, status: "complete" },
+      include: { account: true },
+    })
 
-    try {
-      await sendDailyDigestEmail(targetDate, emailPayload)
-      await prisma.digestEmail.create({
-        data: { date: targetDate, sentAt: new Date(), status: "sent" },
-      })
-    } catch (error) {
-      await prisma.digestEmail.create({
-        data: { date: targetDate, status: "failed", error: String(error) },
-      })
+    // Only send if no email has been sent today
+    const alreadySent = await prisma.digestEmail.findFirst({
+      where: { date: targetDate, status: "sent" },
+    })
+
+    if (!alreadySent && completedDigests.length > 0) {
+      const { sendDailyDigestEmail } = await import("./email")
+      const emailPayload = completedDigests.map((d) => ({
+        handle: d.account.handle,
+        displayName: d.account.displayName,
+        categories: d.account.categories,
+        summary: d.summary!,
+        sentiment: d.sentiment!,
+        tickers: d.tickers,
+      }))
+
+      try {
+        await sendDailyDigestEmail(targetDate, emailPayload)
+        await prisma.digestEmail.create({
+          data: { date: targetDate, sentAt: new Date(), status: "sent" },
+        })
+      } catch (error) {
+        await prisma.digestEmail.create({
+          data: { date: targetDate, status: "failed", error: String(error) },
+        })
+      }
     }
   }
 
-  return results.map((r, i) => ({
-    handle: accounts[i].handle,
-    status: r.status,
-    error: r.status === "rejected" ? String(r.reason) : undefined,
-  }))
+  return {
+    batch: results.map((r, i) => ({
+      handle: batch[i].handle,
+      status: r.status,
+      error: r.status === "rejected" ? String(r.reason) : undefined,
+    })),
+    completedToday: completedCount,
+    totalActive,
+    emailSent: isLastBatch,
+  }
 }
 
 async function processAccount(

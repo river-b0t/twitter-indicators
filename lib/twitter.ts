@@ -1,5 +1,4 @@
 import { Scraper } from "agent-twitter-client"
-import { Cookie } from "tough-cookie"
 
 export interface RawTweet {
   tweetId: string
@@ -24,18 +23,13 @@ async function getAuthenticatedScraper(): Promise<Scraper> {
   const rawCookies = process.env.TWITTER_COOKIES
   if (!rawCookies) throw new Error("TWITTER_COOKIES env var is not set")
 
-  // Accepts either a JSON array of cookie objects or a Netscape/header string
-  let cookies: Cookie[]
-  try {
-    const parsed = JSON.parse(rawCookies) as Array<{ name: string; value: string; domain?: string; path?: string }>
-    cookies = parsed.map((c) =>
-      new Cookie({ key: c.name, value: c.value, domain: c.domain ?? ".twitter.com", path: c.path ?? "/" })
-    )
-  } catch {
-    throw new Error("TWITTER_COOKIES must be a JSON array of {name, value, domain?, path?} objects")
-  }
+  const parsed = JSON.parse(rawCookies) as Array<{ name: string; value: string; domain?: string; path?: string }>
+  // Pass as strings to avoid tough-cookie version mismatch (instanceof check)
+  const cookieStrings = parsed.map(
+    (c) => `${c.name}=${c.value}; Domain=${c.domain ?? ".twitter.com"}; Path=${c.path ?? "/"}`
+  )
 
-  await scraper.setCookies(cookies)
+  await scraper.setCookies(cookieStrings)
   return scraper
 }
 

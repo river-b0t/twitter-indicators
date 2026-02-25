@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const cookie = request.cookies.get('site-auth')
   const password = process.env.SITE_PASSWORD
 
-  if (cookie?.value === password) {
+  if (password && cookie?.value === password) {
     return NextResponse.next()
   }
 

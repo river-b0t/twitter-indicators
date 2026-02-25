@@ -1,5 +1,5 @@
 import { prisma } from "./prisma"
-import { fetchTweetsForAccount } from "./apify"
+import { fetchTweetsForAccount } from "./twitter"
 import { summarizeAccountTweets } from "./gemini"
 import { startOfDay, subDays } from "date-fns"
 

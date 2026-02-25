@@ -15,7 +15,7 @@ export default function LoginPage() {
       headers: { 'Content-Type': 'application/json' },
     })
     if (res.ok) {
-      router.push('/')
+      window.location.href = '/'
     } else {
       setError(true)
     }

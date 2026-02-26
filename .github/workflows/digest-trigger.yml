@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 2
     env:
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
-      TARGET_URL: "https://twitter-indicators.vercel.app/api/digest/run"
+      TARGET_URL: "https://notis.wallyhansen.com/api/digest/run"
     steps:
       - name: Trigger digest batch
         run: |

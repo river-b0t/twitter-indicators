@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { signOut } from "@/auth"
+import { cookies } from "next/headers"
 import { Button } from "@/components/ui/button"
 
 export function Nav() {
@@ -17,6 +18,8 @@ export function Nav() {
       <form
         action={async () => {
           "use server"
+          const cookieStore = await cookies()
+          cookieStore.set('site-auth', '', { maxAge: 0 })
           await signOut({ redirectTo: "/login" })
         }}
       >

@@ -60,6 +60,7 @@ model DailyDigest {
   summary     String?
   sentiment   Sentiment?
   tickers     String[]
+  tickerData  Json?          // { BTC: { price: 94000, change: 2.4, resolved: true } }
   keyTweetIds String[]
   status      DigestStatus   @default(pending)
   createdAt   DateTime       @default(now())

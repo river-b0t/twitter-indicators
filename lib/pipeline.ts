@@ -1,6 +1,7 @@
 import { prisma } from "./prisma"
 import { fetchTweetsForAccount } from "./twitter"
 import { summarizeAccountTweets } from "./gemini"
+import { fetchTickerPrices } from "./finnhub"
 import { startOfDay, subDays } from "date-fns"
 
 const BATCH_SIZE = 5
@@ -124,6 +125,16 @@ async function processAccount(
     throw error
   }
 
+  // Fetch ticker prices
+  let tickerData = {}
+  if (digestResult.tickers.length > 0) {
+    try {
+      tickerData = await fetchTickerPrices(digestResult.tickers)
+    } catch (err) {
+      console.warn(`[pipeline] ticker price fetch failed for ${account.handle}:`, err)
+    }
+  }
+
   // Save digest
   await prisma.dailyDigest.update({
     where: { accountId_date: { accountId: account.id, date } },
@@ -131,6 +142,7 @@ async function processAccount(
       summary: digestResult.summary,
       sentiment: digestResult.sentiment,
       tickers: digestResult.tickers,
+      tickerData,
       keyTweetIds: digestResult.keyTweetIds,
       status: "complete",
     },

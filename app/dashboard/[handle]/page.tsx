@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
-import { format, startOfDay, endOfDay } from "date-fns"
+import { format, startOfDay, endOfDay, parseISO } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { TickerBadge } from "@/components/ticker-badge"
 import type { TickerData } from "@/lib/finnhub"
@@ -31,7 +31,7 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
   const { handle } = await params
   const { date: dateParam } = await searchParams
   const dateStr = dateParam ?? format(new Date(), "yyyy-MM-dd")
-  const date = startOfDay(new Date(dateStr))
+  const date = startOfDay(parseISO(dateStr))
 
   const account = await prisma.twitterAccount.findUnique({
     where: { handle },

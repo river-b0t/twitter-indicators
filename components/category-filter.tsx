@@ -3,6 +3,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 
 const CATEGORIES = ["all", "traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"] as const
 
+const DISPLAY: Partial<Record<typeof CATEGORIES[number], string>> = {
+  vc: "Crypto VC",
+  tradfi: "TradFi",
+}
+
 export function CategoryFilter({ active }: { active: string }) {
   const router = useRouter()
   const params = useSearchParams()
@@ -26,7 +31,7 @@ export function CategoryFilter({ active }: { active: string }) {
               : "text-muted-foreground border-transparent hover:text-foreground"
           }`}
         >
-          {cat}
+          {DISPLAY[cat] ?? cat}
         </button>
       ))}
     </div>

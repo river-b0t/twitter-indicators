@@ -1,13 +1,26 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { format, startOfDay, endOfDay } from "date-fns"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { TickerBadge } from "@/components/ticker-badge"
 import type { TickerData } from "@/lib/finnhub"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, Heart, Repeat2 } from "lucide-react"
 import type { Tweet } from "@prisma/client"
+
+const sentimentDot: Record<string, string> = {
+  bullish: "bg-green-500",
+  bearish: "bg-red-500",
+  neutral: "bg-slate-500",
+  mixed: "bg-amber-500",
+}
+
+const sentimentLabel: Record<string, string> = {
+  bullish: "text-green-400",
+  bearish: "text-red-400",
+  neutral: "text-slate-400",
+  mixed: "text-amber-400",
+}
 
 interface Props {
   params: Promise<{ handle: string }>
@@ -37,22 +50,40 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Back + header */}
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard?date=${dateStr}`} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
+        <Link
+          href={`/dashboard?date=${dateStr}`}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold">@{account.handle}</h1>
-          <p className="text-sm text-muted-foreground">{format(date, "EEEE, MMMM d, yyyy")}</p>
+          <h1 className="font-mono text-lg text-foreground">@{account.handle}</h1>
+          <p className="font-mono text-xs text-muted-foreground tracking-wide">
+            {format(date, "EEE, MMM d yyyy").toUpperCase()}
+          </p>
         </div>
       </div>
 
+      {/* Digest summary card */}
       {digest?.summary && (
         <Card>
-          <CardContent className="pt-4 space-y-2">
-            <p className="text-sm">{digest.summary}</p>
-            <div className="flex flex-wrap gap-2">
-              {digest.sentiment && <Badge>{digest.sentiment}</Badge>}
+          <CardContent className="pt-4 space-y-3">
+            <p className="text-sm leading-relaxed text-foreground/80">{digest.summary}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {digest.sentiment && (
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${sentimentDot[digest.sentiment] ?? "bg-slate-500"}`}
+                  />
+                  <span
+                    className={`font-mono text-xs ${sentimentLabel[digest.sentiment] ?? "text-slate-400"}`}
+                  >
+                    {digest.sentiment}
+                  </span>
+                </div>
+              )}
               {digest.tickers.map((t: string) => (
                 <TickerBadge
                   key={t}
@@ -65,30 +96,41 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
         </Card>
       )}
 
+      {/* Tweet list */}
       <div className="space-y-3">
         {account.tweets.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No tweets found for this date.</p>
+          <p className="text-muted-foreground text-sm font-mono">No tweets found for this date.</p>
         ) : (
-          account.tweets.map((tweet: Tweet) => (
-            <Card key={tweet.id} className={digest?.keyTweetIds.includes(tweet.tweetId) ? "border-primary" : ""}>
-              <CardContent className="pt-4 space-y-2">
-                <p className="text-sm">{tweet.text}</p>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Heart className="h-3 w-3" /> {tweet.likesCount}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Repeat2 className="h-3 w-3" /> {tweet.retweetsCount}
-                  </span>
-                  <span>{format(tweet.postedAt, "h:mm a")}</span>
-                  <a href={tweet.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 hover:text-foreground ml-auto">
-                    View on X <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+          account.tweets.map((tweet: Tweet) => {
+            const isKey = digest?.keyTweetIds.includes(tweet.tweetId)
+            return (
+              <Card
+                key={tweet.id}
+                className={isKey ? "border-l-2 border-l-green-500" : ""}
+              >
+                <CardContent className="pt-4 space-y-2">
+                  <p className="text-sm leading-relaxed">{tweet.text}</p>
+                  <div className="flex items-center gap-4 font-mono text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Heart className="h-3 w-3" /> {tweet.likesCount}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Repeat2 className="h-3 w-3" /> {tweet.retweetsCount}
+                    </span>
+                    <span>{format(tweet.postedAt, "h:mm a")}</span>
+                    <a
+                      href={tweet.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 hover:text-foreground ml-auto transition-colors"
+                    >
+                      View on X <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })
         )}
       </div>
     </div>

@@ -27,8 +27,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm px-4">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Market Digest</h1>
-          <p className="text-sm text-muted-foreground mt-1">Daily summaries from the accounts that matter.</p>
+          <h1 className="font-mono text-base tracking-widest uppercase text-foreground">Market Digest</h1>
+          <p className="font-mono text-xs text-muted-foreground mt-2">Enter password to continue</p>
         </div>
         <div className="border border-border rounded-xl p-8 bg-card shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,6 +1,5 @@
 "use client"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
 
 const CATEGORIES = ["all", "traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"] as const
 
@@ -16,17 +15,19 @@ export function CategoryFilter({ active }: { active: string }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-0 border-b border-border">
       {CATEGORIES.map((cat) => (
-        <Button
+        <button
           key={cat}
-          variant={active === cat ? "default" : "outline"}
-          size="sm"
           onClick={() => select(cat)}
-          className="capitalize"
+          className={`px-3 py-2 text-xs font-mono capitalize transition-colors border-b-2 -mb-px ${
+            active === cat
+              ? "text-foreground border-foreground"
+              : "text-muted-foreground border-transparent hover:text-foreground"
+          }`}
         >
           {cat}
-        </Button>
+        </button>
       ))}
     </div>
   )

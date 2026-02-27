@@ -31,10 +31,9 @@ export default async function DashboardPage({ searchParams }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Market Digest</h1>
-          <p className="text-muted-foreground text-sm">{format(date, "EEEE, MMMM d, yyyy")}</p>
-        </div>
+        <p className="font-mono text-xs text-muted-foreground tracking-wide">
+          {format(date, "EEE, MMM d yyyy").toUpperCase()}
+        </p>
         <RefreshButton />
       </div>
 

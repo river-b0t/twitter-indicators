@@ -2,25 +2,23 @@ import { TickerBadge } from "@/components/ticker-badge"
 import Link from "next/link"
 import type { TickerData } from "@/lib/finnhub"
 
-const sentimentBorder: Record<string, string> = {
-  bullish: "border-l-green-500",
-  bearish: "border-l-red-500",
-  neutral: "border-l-slate-500",
-  mixed: "border-l-amber-500",
-}
-
-const sentimentDot: Record<string, string> = {
-  bullish: "bg-green-500",
-  bearish: "bg-red-500",
-  neutral: "bg-slate-500",
-  mixed: "bg-amber-500",
-}
-
-const sentimentLabel: Record<string, string> = {
-  bullish: "text-green-400",
-  bearish: "text-red-400",
-  neutral: "text-slate-400",
-  mixed: "text-amber-400",
+function getSentimentStyles(sentiment: string): {
+  border: string
+  dot: string
+  label: string
+} {
+  switch (sentiment) {
+    case "bullish":
+      return { border: "border-l-green-500", dot: "bg-green-500", label: "text-green-400" }
+    case "bearish":
+      return { border: "border-l-red-500", dot: "bg-red-500", label: "text-red-400" }
+    case "neutral":
+      return { border: "border-l-slate-500", dot: "bg-slate-500", label: "text-slate-400" }
+    case "mixed":
+      return { border: "border-l-amber-500", dot: "bg-amber-500", label: "text-amber-400" }
+    default:
+      return { border: "border-l-slate-500", dot: "bg-slate-500", label: "text-slate-400" }
+  }
 }
 
 interface AccountCardProps {
@@ -48,7 +46,7 @@ export function AccountCard({
   status,
 }: AccountCardProps) {
   const borderColor = sentiment
-    ? (sentimentBorder[sentiment] ?? "border-l-border")
+    ? getSentimentStyles(sentiment).border
     : "border-l-transparent"
 
   return (
@@ -65,9 +63,9 @@ export function AccountCard({
           {sentiment && (
             <div className="flex items-center gap-1.5 shrink-0">
               <div
-                className={`w-1.5 h-1.5 rounded-full shrink-0 ${sentimentDot[sentiment] ?? "bg-border"}`}
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${getSentimentStyles(sentiment).dot}`}
               />
-              <span className={`font-mono text-xs ${sentimentLabel[sentiment] ?? "text-muted-foreground"}`}>
+              <span className={`font-mono text-xs ${getSentimentStyles(sentiment).label}`}>
                 {sentiment}
               </span>
             </div>

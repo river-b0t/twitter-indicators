@@ -3,6 +3,8 @@ import { notFound } from "next/navigation"
 import { format, startOfDay, endOfDay } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { TickerBadge } from "@/components/ticker-badge"
+import type { TickerData } from "@/lib/finnhub"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, Heart, Repeat2 } from "lucide-react"
 import type { Tweet } from "@prisma/client"
@@ -49,10 +51,14 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
         <Card>
           <CardContent className="pt-4 space-y-2">
             <p className="text-sm">{digest.summary}</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {digest.sentiment && <Badge>{digest.sentiment}</Badge>}
               {digest.tickers.map((t: string) => (
-                <Badge key={t} variant="outline">{t}</Badge>
+                <TickerBadge
+                  key={t}
+                  ticker={t}
+                  entry={(digest.tickerData as TickerData | null)?.[t]}
+                />
               ))}
             </div>
           </CardContent>

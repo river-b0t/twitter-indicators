@@ -66,7 +66,13 @@ export function DigestEmail({ date, digests, dashboardUrl }: DigestEmailProps) {
                         const entry = d.tickerData?.[t]
                         if (!entry?.resolved || !entry.price) return t
                         const sign = (entry.change ?? 0) >= 0 ? "+" : ""
-                        return `${t} $${entry.price.toLocaleString("en-US", { maximumFractionDigits: 0 })} (${sign}${entry.change}%)`
+                        const p = entry.price
+                        const priceStr = p >= 1000
+                          ? `$${p.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+                          : p >= 1
+                          ? `$${p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : `$${p.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
+                        return `${t} ${priceStr} (${sign}${entry.change}%)`
                       }).join(", ")}`}
                     </Text>
                     <Text style={{ margin: "4px 0 0", fontSize: "13px", color: "#374151" }}>{d.summary}</Text>

@@ -13,6 +13,7 @@ export async function sendDailyDigestEmail(
     summary: string
     sentiment: string
     tickers: string[]
+    tickerData?: Record<string, { price?: number; change?: number; resolved: boolean }>
   }>
 ) {
   const dateStr = format(date, "EEEE, MMMM d, yyyy")

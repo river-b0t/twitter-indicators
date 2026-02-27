@@ -4,6 +4,7 @@ import { CategoryFilter } from "@/components/category-filter"
 import { RefreshButton } from "@/components/refresh-button"
 import { format, startOfDay } from "date-fns"
 import { Suspense } from "react"
+import type { TickerData } from "@/lib/finnhub"
 
 interface Props {
   searchParams: Promise<{ date?: string; category?: string }>
@@ -56,6 +57,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                 summary={digest?.summary ?? null}
                 sentiment={digest?.sentiment ?? null}
                 tickers={digest?.tickers ?? []}
+                tickerData={digest?.tickerData as TickerData | null}
                 tweetCount={account.tweets.length}
                 date={dateStr}
                 status={digest?.status ?? "pending"}

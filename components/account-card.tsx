@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { TickerBadge } from "@/components/ticker-badge"
 import Link from "next/link"
+import type { TickerData } from "@/lib/finnhub"
 
 const sentimentColors = {
   bullish: "bg-green-100 text-green-800",
@@ -16,13 +18,14 @@ interface AccountCardProps {
   summary: string | null
   sentiment: string | null
   tickers: string[]
+  tickerData?: TickerData | null
   tweetCount: number
   date: string
   status: string
 }
 
 export function AccountCard({
-  handle, displayName, categories, summary, sentiment, tickers, tweetCount, date, status
+  handle, displayName, categories, summary, sentiment, tickers, tickerData, tweetCount, date, status
 }: AccountCardProps) {
   return (
     <Link href={`/dashboard/${handle}?date=${date}`}>
@@ -51,7 +54,11 @@ export function AccountCard({
           {tickers.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {tickers.map((t) => (
-                <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
+                <TickerBadge
+                  key={t}
+                  ticker={t}
+                  entry={tickerData?.[t]}
+                />
               ))}
             </div>
           )}

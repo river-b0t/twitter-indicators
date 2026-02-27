@@ -2,9 +2,12 @@ import { prisma } from "@/lib/prisma"
 import { AccountCard } from "@/components/account-card"
 import { CategoryFilter } from "@/components/category-filter"
 import { RefreshButton } from "@/components/refresh-button"
-import { format, startOfDay } from "date-fns"
+import { SummaryBox } from "@/components/summary-box"
+import { DatePicker } from "@/components/date-picker"
+import { format, startOfDay, parseISO } from "date-fns"
 import { Suspense } from "react"
 import type { TickerData } from "@/lib/finnhub"
+import { aggregateDigests } from "@/lib/summary"
 
 interface Props {
   searchParams: Promise<{ date?: string; category?: string }>
@@ -13,7 +16,7 @@ interface Props {
 export default async function DashboardPage({ searchParams }: Props) {
   const { date: dateParam, category: categoryParam } = await searchParams
   const dateStr = dateParam ?? format(new Date(), "yyyy-MM-dd")
-  const date = startOfDay(new Date(dateStr))
+  const date = startOfDay(parseISO(dateStr))   // parseISO avoids UTC-vs-local issue
   const category = categoryParam ?? "all"
 
   const accounts = await prisma.twitterAccount.findMany({
@@ -28,14 +31,32 @@ export default async function DashboardPage({ searchParams }: Props) {
     orderBy: { handle: "asc" },
   })
 
+  // Build category summary from fetched digests (no extra query needed)
+  const digestInputs = accounts.map((a) => ({
+    summary: a.digests[0]?.summary ?? null,
+    sentiment: (a.digests[0]?.sentiment as string | null) ?? null,
+    tickers: a.digests[0]?.tickers ?? [],
+    tickerData: (a.digests[0]?.tickerData as TickerData | null) ?? null,
+    account: { handle: a.handle },
+  }))
+  const categorySummary = aggregateDigests(digestInputs)
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-xs text-muted-foreground tracking-wide">
-          {format(date, "EEE, MMM d yyyy").toUpperCase()}
-        </p>
+        <Suspense
+          fallback={
+            <p className="font-mono text-xs text-muted-foreground tracking-wide">
+              {format(date, "EEE, MMM d yyyy").toUpperCase()}
+            </p>
+          }
+        >
+          <DatePicker dateStr={dateStr} />
+        </Suspense>
         <RefreshButton />
       </div>
+
+      <SummaryBox summary={categorySummary} />
 
       <Suspense>
         <CategoryFilter active={category} />

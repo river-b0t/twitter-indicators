@@ -2,7 +2,7 @@
 import type { CategorySummary } from "@/lib/summary"
 
 function fmt(price?: number): string {
-  if (!price) return ""
+  if (price === undefined) return ""
   return price >= 1000
     ? `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
     : `$${price.toFixed(2)}`

@@ -60,6 +60,7 @@ export async function runDigestPipeline(date: Date = new Date()) {
         summary: d.summary!,
         sentiment: d.sentiment!,
         tickers: d.tickers,
+        tickerData: d.tickerData as Record<string, { price?: number; change?: number; resolved: boolean }> | undefined,
       }))
 
       try {

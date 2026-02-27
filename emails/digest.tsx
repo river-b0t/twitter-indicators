@@ -9,6 +9,7 @@ interface AccountDigest {
   summary: string
   sentiment: string
   tickers: string[]
+  tickerData?: Record<string, { price?: number; change?: number; resolved: boolean }>
 }
 
 interface DigestEmailProps {
@@ -61,7 +62,12 @@ export function DigestEmail({ date, digests, dashboardUrl }: DigestEmailProps) {
                   <Section key={d.handle} style={{ marginBottom: "16px" }}>
                     <Text style={{ margin: "0", fontWeight: "bold", fontSize: "13px" }}>
                       @{d.handle} {sentimentEmoji[d.sentiment] ?? ""}
-                      {d.tickers.length > 0 && ` · ${d.tickers.join(", ")}`}
+                      {d.tickers.length > 0 && ` · ${d.tickers.map((t) => {
+                        const entry = d.tickerData?.[t]
+                        if (!entry?.resolved || !entry.price) return t
+                        const sign = (entry.change ?? 0) >= 0 ? "+" : ""
+                        return `${t} $${entry.price.toLocaleString("en-US", { maximumFractionDigits: 0 })} (${sign}${entry.change}%)`
+                      }).join(", ")}`}
                     </Text>
                     <Text style={{ margin: "4px 0 0", fontSize: "13px", color: "#374151" }}>{d.summary}</Text>
                   </Section>

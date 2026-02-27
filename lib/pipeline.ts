@@ -13,8 +13,15 @@ export async function runDigestPipeline(date: Date = new Date()) {
   // Find active accounts not yet processed today (no digest or failed)
   const totalActive = await prisma.twitterAccount.count({ where: { active: true } })
 
+  const staleCutoff = new Date(Date.now() - 10 * 60 * 1000)
   const processedIds = await prisma.dailyDigest.findMany({
-    where: { date: targetDate, status: { in: ["complete", "pending"] } },
+    where: {
+      date: targetDate,
+      OR: [
+        { status: "complete" },
+        { status: "pending", updatedAt: { gte: staleCutoff } },
+      ],
+    },
     select: { accountId: true },
   })
   const processedSet = new Set(processedIds.map((d) => d.accountId))

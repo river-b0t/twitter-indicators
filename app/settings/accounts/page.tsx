@@ -21,6 +21,7 @@ export default function AccountsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [addCatOpen, setAddCatOpen] = useState(false)
   const [removeCatOpen, setRemoveCatOpen] = useState(false)
+  const [tierPopoverOpen, setTierPopoverOpen] = useState(false)
   const [bulkAddCats, setBulkAddCats] = useState<string[]>([])
   const [bulkRemoveCats, setBulkRemoveCats] = useState<string[]>([])
 
@@ -53,6 +54,15 @@ export default function AccountsPage() {
   async function deleteAccount(id: string) {
     await fetch(`/api/accounts/${id}`, { method: "DELETE" })
     setAccounts((a) => a.filter((acc) => acc.id !== id))
+  }
+
+  async function setTier(id: string, tier: number) {
+    await fetch(`/api/accounts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tier }),
+    })
+    setAccounts((a) => a.map((acc) => acc.id === id ? { ...acc, tier } : acc))
   }
 
   function toggleSelected(id: string) {
@@ -115,6 +125,19 @@ export default function AccountsPage() {
     )
     setBulkRemoveCats([])
     setRemoveCatOpen(false)
+  }
+
+  async function bulkSetTier(tier: number) {
+    const ids = Array.from(selected)
+    await fetch("/api/accounts/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, action: "set-tier", tier }),
+    })
+    setAccounts((prev) =>
+      prev.map((acc) => selected.has(acc.id) ? { ...acc, tier } : acc)
+    )
+    setTierPopoverOpen(false)
   }
 
   async function bulkDelete() {
@@ -214,6 +237,22 @@ export default function AccountsPage() {
               ))}
             </div>
             <div className="flex items-center gap-3">
+              {/* Tier pills */}
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTier(account.id, t)}
+                    className={`w-6 h-6 rounded text-xs font-mono font-medium transition-colors ${
+                      account.tier === t
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
               <Switch
                 checked={account.active}
                 onCheckedChange={(v) => toggleActive(account.id, v)}
@@ -307,6 +346,28 @@ export default function AccountsPage() {
                 >
                   Apply
                 </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Set tier popover */}
+          <Popover open={tierPopoverOpen} onOpenChange={setTierPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="font-mono text-xs h-7">
+                Set tier <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-32 p-2" side="top">
+              <div className="space-y-1">
+                {[1, 2, 3].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => bulkSetTier(t)}
+                    className="w-full text-left px-2 py-1 rounded text-xs font-mono hover:bg-accent"
+                  >
+                    Tier {t}
+                  </button>
+                ))}
               </div>
             </PopoverContent>
           </Popover>

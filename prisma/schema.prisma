@@ -63,6 +63,7 @@ model DailyDigest {
   tickerData  Json?          // { BTC: { price: 94000, change: 2.4, resolved: true } }
   keyTweetIds String[]
   status      DigestStatus   @default(pending)
+  error       String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -75,6 +76,20 @@ model DigestEmail {
   sentAt DateTime?
   status EmailStatus
   error  String?
+}
+
+model AlertRule {
+  id        String   @id @default(cuid())
+  keyword   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AlertRun {
+  id         String   @id @default(cuid())
+  ranAt      DateTime @default(now())
+  matchCount Int
+  status     String   // "sent" | "no_matches" | "failed"
 }
 
 // NextAuth tables

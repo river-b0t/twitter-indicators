@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
-import { format, startOfDay, endOfDay, parseISO } from "date-fns"
+import { format, startOfDay, endOfDay, parseISO, subDays } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { TickerBadge } from "@/components/ticker-badge"
 import type { TickerData } from "@/lib/finnhub"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, Heart, Repeat2 } from "lucide-react"
 import type { Tweet } from "@prisma/client"
+import { SentimentHistory } from "@/components/sentiment-history"
 
 const sentimentDot: Record<string, string> = {
   bullish: "bg-green-500",
@@ -45,6 +46,21 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
   })
 
   if (!account) notFound()
+
+  // 30-day sentiment history
+  const thirtyDaysAgo = subDays(startOfDay(new Date()), 29)
+  const rawHistory = await prisma.dailyDigest.findMany({
+    where: { accountId: account.id, date: { gte: thirtyDaysAgo } },
+    select: { date: true, sentiment: true },
+    orderBy: { date: "asc" },
+  })
+
+  // Build 30-day window with null fill for missing days
+  const sentimentMap = new Map(rawHistory.map((h) => [format(h.date, "yyyy-MM-dd"), h.sentiment]))
+  const history = Array.from({ length: 30 }, (_, i) => {
+    const d = subDays(startOfDay(new Date()), 29 - i)
+    return { date: d, sentiment: sentimentMap.get(format(d, "yyyy-MM-dd")) ?? null }
+  })
 
   const digest = account.digests[0]
 
@@ -95,6 +111,9 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* Sentiment history */}
+      <SentimentHistory history={history} />
 
       {/* Tweet list */}
       <div className="space-y-3">

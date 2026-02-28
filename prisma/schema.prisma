@@ -34,6 +34,7 @@ model TwitterAccount {
   categories  String[]
   avatarUrl   String?
   active      Boolean  @default(true)
+  tier        Int      @default(2)
   createdAt   DateTime @default(now())
   tweets      Tweet[]
   digests     DailyDigest[]

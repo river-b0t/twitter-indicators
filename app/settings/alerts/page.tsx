@@ -28,6 +28,7 @@ export default function AlertsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ keyword: trimmed }),
     })
+    if (!res.ok) return
     const rule = await res.json()
     setRules((prev) => [...prev, rule])
     setKeyword("")

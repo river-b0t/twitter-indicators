@@ -11,11 +11,12 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json() as {
     ids: string[]
-    action: "delete" | "add-categories" | "remove-categories"
+    action: "delete" | "add-categories" | "remove-categories" | "set-tier"
     categories?: string[]
+    tier?: number
   }
 
-  const { ids, action, categories } = body
+  const { ids, action, categories, tier } = body
 
   if (!ids?.length) return NextResponse.json({ error: "No IDs provided" }, { status: 400 })
 
@@ -51,6 +52,14 @@ export async function POST(request: NextRequest) {
         return prisma.twitterAccount.update({ where: { id: acc.id }, data: { categories: filtered } })
       })
     )
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === "set-tier") {
+    if (tier === undefined || ![1, 2, 3].includes(tier)) {
+      return NextResponse.json({ error: "tier must be 1, 2, or 3" }, { status: 400 })
+    }
+    await prisma.twitterAccount.updateMany({ where: { id: { in: ids } }, data: { tier } })
     return NextResponse.json({ ok: true })
   }
 

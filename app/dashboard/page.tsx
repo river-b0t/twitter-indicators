@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { AccountCard } from "@/components/account-card"
 import { CategoryFilter } from "@/components/category-filter"
+import { TierFilter } from "@/components/tier-filter"
 import { RefreshButton } from "@/components/refresh-button"
 import { SummaryBox } from "@/components/summary-box"
 import { DatePicker } from "@/components/date-picker"
@@ -10,25 +11,27 @@ import type { TickerData } from "@/lib/finnhub"
 import { aggregateDigests } from "@/lib/summary"
 
 interface Props {
-  searchParams: Promise<{ date?: string; category?: string }>
+  searchParams: Promise<{ date?: string; category?: string; tier?: string }>
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
-  const { date: dateParam, category: categoryParam } = await searchParams
+  const { date: dateParam, category: categoryParam, tier: tierParam } = await searchParams
   const dateStr = dateParam ?? format(new Date(), "yyyy-MM-dd")
   const date = startOfDay(parseISO(dateStr))   // parseISO avoids UTC-vs-local issue
   const category = categoryParam ?? "all"
+  const tier = tierParam ?? "all"
 
   const accounts = await prisma.twitterAccount.findMany({
     where: {
       active: true,
       ...(category !== "all" ? { categories: { hasSome: [category] } } : {}),
+      ...(tier !== "all" ? { tier: parseInt(tier) } : {}),
     },
     include: {
       digests: { where: { date }, take: 1 },
       tweets: { where: { postedAt: { gte: date } }, select: { id: true } },
     },
-    orderBy: { handle: "asc" },
+    orderBy: [{ tier: "asc" }, { handle: "asc" }],
   })
 
   // Build category summary from fetched digests (no extra query needed)
@@ -58,9 +61,14 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       <SummaryBox summary={categorySummary} />
 
-      <Suspense>
-        <CategoryFilter active={category} />
-      </Suspense>
+      <div className="flex items-center gap-4 flex-wrap">
+        <Suspense>
+          <CategoryFilter active={category} />
+        </Suspense>
+        <Suspense>
+          <TierFilter active={tier} />
+        </Suspense>
+      </div>
 
       {accounts.length === 0 ? (
         <p className="text-muted-foreground text-sm">No accounts found. Add some in Settings.</p>

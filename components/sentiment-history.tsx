@@ -17,7 +17,7 @@ const SQUARE_COLOR: Record<string, string> = {
 }
 
 export function SentimentHistory({ history }: Props) {
-  const hasData = history.some((h) => h.sentiment !== null)
+  const hasData = history.filter((h) => h.sentiment).length >= 2
   if (!hasData) return null
 
   return (

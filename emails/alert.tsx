@@ -35,8 +35,8 @@ export function AlertEmail({ matchesByKeyword, dashboardUrl }: AlertEmailProps) 
               <Heading style={{ fontSize: "14px", color: "#374151", marginBottom: "8px" }}>
                 "{keyword}" — {tweets.length} match{tweets.length !== 1 ? "es" : ""}
               </Heading>
-              {tweets.map((tweet, i) => (
-                <Section key={i} style={{ marginBottom: "12px", paddingLeft: "12px", borderLeft: "2px solid #e5e7eb" }}>
+              {tweets.map((tweet) => (
+                <Section key={tweet.url} style={{ marginBottom: "12px", paddingLeft: "12px", borderLeft: "2px solid #e5e7eb" }}>
                   <Text style={{ margin: "0", fontSize: "12px", color: "#6b7280" }}>
                     @{tweet.handle} · {formatDistanceToNow(new Date(tweet.postedAt), { addSuffix: true })}
                   </Text>

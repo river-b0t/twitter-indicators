@@ -22,6 +22,12 @@ export function Nav() {
         >
           Accounts
         </Link>
+        <Link
+          href="/settings/alerts"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Alerts
+        </Link>
       </div>
       <form
         action={async () => {

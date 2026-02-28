@@ -10,14 +10,14 @@ interface Props {
 }
 
 const SQUARE_COLOR: Record<string, string> = {
-  bullish: "bg-green-500",
-  bearish: "bg-red-500",
+  bullish: "bg-green-400",
+  bearish: "bg-red-400",
   mixed: "bg-yellow-400",
   neutral: "bg-slate-400",
 }
 
 export function SentimentHistory({ history }: Props) {
-  const hasData = history.filter((h) => h.sentiment).length >= 2
+  const hasData = history.some((h) => h.sentiment !== null)
   if (!hasData) return null
 
   return (

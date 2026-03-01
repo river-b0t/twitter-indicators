@@ -100,15 +100,29 @@ async function processAccount(
   date: Date,
   since: Date
 ) {
+  console.log(`[pipeline] processing @${account.handle}`)
+
   // Upsert digest as pending
   await prisma.dailyDigest.upsert({
     where: { accountId_date: { accountId: account.id, date } },
     create: { accountId: account.id, date, status: "pending" },
-    update: { status: "pending" },
+    update: { status: "pending", error: null },
   })
 
   // Fetch tweets
-  const rawTweets = await fetchTweetsForAccount(account.handle, since)
+  let rawTweets
+  try {
+    rawTweets = await fetchTweetsForAccount(account.handle, since)
+    console.log(`[pipeline] @${account.handle}: fetched ${rawTweets.length} tweets`)
+  } catch (error) {
+    const msg = String(error)
+    console.error(`[pipeline] @${account.handle}: tweet fetch failed — ${msg}`)
+    await prisma.dailyDigest.update({
+      where: { accountId_date: { accountId: account.id, date } },
+      data: { status: "failed", error: msg },
+    })
+    throw error
+  }
 
   // Upsert tweets
   await Promise.allSettled(
@@ -126,9 +140,11 @@ async function processAccount(
   try {
     digestResult = await summarizeAccountTweets(account.handle, rawTweets)
   } catch (error) {
+    const msg = String(error)
+    console.error(`[pipeline] @${account.handle}: summarize failed — ${msg}`)
     await prisma.dailyDigest.update({
       where: { accountId_date: { accountId: account.id, date } },
-      data: { status: "failed" },
+      data: { status: "failed", error: msg },
     })
     throw error
   }
@@ -153,6 +169,8 @@ async function processAccount(
       tickerData,
       keyTweetIds: digestResult.keyTweetIds,
       status: "complete",
+      error: null,
     },
   })
+  console.log(`[pipeline] @${account.handle}: complete`)
 }

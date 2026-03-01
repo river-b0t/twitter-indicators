@@ -39,26 +39,42 @@ export async function fetchTickerPrices(tickers: string[]): Promise<TickerData> 
   if (tickers.length === 0) return {}
 
   const apiKey = process.env.FINNHUB_API_KEY
-  if (!apiKey) {
-    console.warn("[finnhub] FINNHUB_API_KEY not set, skipping price fetch")
-    return Object.fromEntries(tickers.map((t) => [t, { resolved: false }]))
-  }
-
-  const resolved = tickers.map((t) => SYMBOL_MAP[t.toUpperCase()] ?? t)
-
-  const results = await Promise.allSettled(
-    resolved.map((symbol) => fetchOne(symbol, apiKey))
-  )
 
   const data: TickerData = {}
-  for (let i = 0; i < tickers.length; i++) {
-    const r = results[i]
-    data[tickers[i]] =
-      r.status === "fulfilled"
-        ? r.value
-        : { resolved: false }
-  }
+
+  await Promise.allSettled(tickers.map(async (ticker) => {
+    const upper = ticker.toUpperCase()
+    const mapped = SYMBOL_MAP[upper]
+
+    if (mapped && apiKey) {
+      // Known symbol — use Finnhub
+      data[ticker] = await fetchOne(mapped, apiKey).catch(() => ({ resolved: false }))
+    } else {
+      // Unknown symbol — try DexScreener
+      data[ticker] = await fetchDexScreener(ticker).catch(() => ({ resolved: false }))
+    }
+  }))
+
   return data
+}
+
+async function fetchDexScreener(ticker: string): Promise<TickerEntry> {
+  const url = `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(ticker)}`
+  const res = await fetch(url, { next: { revalidate: 0 } })
+  if (!res.ok) return { resolved: false }
+
+  const json = await res.json() as { pairs?: Array<{ baseToken: { symbol: string }; priceUsd: string; priceChange?: { h24: number } }> }
+  const pairs = json.pairs ?? []
+
+  // Find first pair where base token symbol matches (case-insensitive)
+  const match = pairs.find((p) => p.baseToken.symbol.toUpperCase() === ticker.toUpperCase())
+  if (!match || !match.priceUsd) return { resolved: false }
+
+  return {
+    price: parseFloat(match.priceUsd),
+    change: match.priceChange?.h24 != null ? Math.round(match.priceChange.h24 * 100) / 100 : undefined,
+    resolved: true,
+  }
 }
 
 async function fetchOne(ticker: string, apiKey: string): Promise<TickerEntry> {

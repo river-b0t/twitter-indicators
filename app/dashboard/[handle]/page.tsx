@@ -9,6 +9,8 @@ import { ArrowLeft, ExternalLink, Heart, Repeat2 } from "lucide-react"
 import type { Tweet } from "@prisma/client"
 import { SentimentHistory } from "@/components/sentiment-history"
 
+const CATEGORY_DISPLAY: Partial<Record<string, string>> = { vc: "Crypto VC", tradfi: "TradFi" }
+
 const sentimentDot: Record<string, string> = {
   bullish: "bg-green-500",
   bearish: "bg-red-500",
@@ -75,7 +77,17 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div>
-          <h1 className="font-mono text-lg text-foreground">@{account.handle}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-mono text-lg text-foreground">@{account.handle}</h1>
+            {account.categories.map((c) => (
+              <span
+                key={c}
+                className="text-[10px] font-mono border border-border rounded px-1.5 py-0.5 capitalize text-muted-foreground"
+              >
+                {CATEGORY_DISPLAY[c] ?? c}
+              </span>
+            ))}
+          </div>
           <p className="font-mono text-xs text-muted-foreground tracking-wide">
             {format(date, "EEE, MMM d yyyy").toUpperCase()}
           </p>

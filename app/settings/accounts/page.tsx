@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Trash2, ChevronDown } from "lucide-react"
@@ -21,7 +20,8 @@ export default function AccountsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [addCatOpen, setAddCatOpen] = useState(false)
   const [removeCatOpen, setRemoveCatOpen] = useState(false)
-  const [tierPopoverOpen, setTierPopoverOpen] = useState(false)
+  const [bulkTierCategory, setBulkTierCategory] = useState<string | null>(null)
+  const [bulkTierPopoverOpen, setBulkTierPopoverOpen] = useState(false)
   const [bulkAddCats, setBulkAddCats] = useState<string[]>([])
   const [bulkRemoveCats, setBulkRemoveCats] = useState<string[]>([])
 
@@ -56,13 +56,16 @@ export default function AccountsPage() {
     setAccounts((a) => a.filter((acc) => acc.id !== id))
   }
 
-  async function setTier(id: string, tier: number) {
+  async function setCategoryTier(id: string, category: string, tier: number) {
+    const account = accounts.find((a) => a.id === id)
+    const currentMap = (account?.tierMap as Record<string, number>) ?? {}
+    const newMap = { ...currentMap, [category]: tier }
     await fetch(`/api/accounts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tier }),
+      body: JSON.stringify({ tierMap: newMap }),
     })
-    setAccounts((a) => a.map((acc) => acc.id === id ? { ...acc, tier } : acc))
+    setAccounts((a) => a.map((acc) => acc.id === id ? { ...acc, tierMap: newMap } : acc))
   }
 
   function toggleSelected(id: string) {
@@ -127,17 +130,22 @@ export default function AccountsPage() {
     setRemoveCatOpen(false)
   }
 
-  async function bulkSetTier(tier: number) {
+  async function bulkSetTier(category: string, tier: number) {
     const ids = Array.from(selected)
     await fetch("/api/accounts/bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids, action: "set-tier", tier }),
+      body: JSON.stringify({ ids, action: "set-tier", category, tier }),
     })
     setAccounts((prev) =>
-      prev.map((acc) => selected.has(acc.id) ? { ...acc, tier } : acc)
+      prev.map((acc) => {
+        if (!selected.has(acc.id)) return acc
+        const currentMap = (acc.tierMap as Record<string, number>) ?? {}
+        return { ...acc, tierMap: { ...currentMap, [category]: tier } }
+      })
     )
-    setTierPopoverOpen(false)
+    setBulkTierPopoverOpen(false)
+    setBulkTierCategory(null)
   }
 
   async function bulkDelete() {
@@ -230,29 +238,31 @@ export default function AccountsPage() {
               />
               <span className="font-mono text-sm">@{account.handle}</span>
               <span className="text-sm text-muted-foreground">{account.displayName}</span>
-              {account.categories.map((c: string) => (
-                <Badge key={c} variant="outline" className="capitalize text-xs">
-                  {DISPLAY[c] ?? c}
-                </Badge>
-              ))}
+              {account.categories.map((c: string) => {
+                const t = ((account.tierMap as Record<string, number>) ?? {})[c] ?? 2
+                return (
+                  <div key={c} className="flex items-center gap-0.5">
+                    <span className="text-xs font-mono border border-border rounded px-1.5 py-0.5 capitalize">
+                      {DISPLAY[c] ?? c}
+                    </span>
+                    {[1, 2, 3].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setCategoryTier(account.id, c, n)}
+                        className={`w-5 h-5 rounded text-[10px] font-mono font-medium transition-colors ${
+                          t === n
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )
+              })}
             </div>
             <div className="flex items-center gap-3">
-              {/* Tier pills */}
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTier(account.id, t)}
-                    className={`w-6 h-6 rounded text-xs font-mono font-medium transition-colors ${
-                      account.tier === t
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
               <Switch
                 checked={account.active}
                 onCheckedChange={(v) => toggleActive(account.id, v)}
@@ -350,25 +360,49 @@ export default function AccountsPage() {
             </PopoverContent>
           </Popover>
 
-          {/* Set tier popover */}
-          <Popover open={tierPopoverOpen} onOpenChange={setTierPopoverOpen}>
+          {/* Set tier popover — two-step: pick category then tier */}
+          <Popover open={bulkTierPopoverOpen} onOpenChange={(v) => { setBulkTierPopoverOpen(v); if (!v) setBulkTierCategory(null) }}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="font-mono text-xs h-7">
                 Set tier <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-32 p-2" side="top">
-              <div className="space-y-1">
-                {[1, 2, 3].map((t) => (
+            <PopoverContent align="start" className="w-40 p-2" side="top">
+              {!bulkTierCategory ? (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono text-muted-foreground px-2 pb-1">Pick category</p>
+                  {CATEGORIES.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setBulkTierCategory(c)}
+                      className="w-full text-left px-2 py-1 rounded text-xs font-mono capitalize hover:bg-accent"
+                    >
+                      {DISPLAY[c] ?? c}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono text-muted-foreground px-2 pb-1 capitalize">
+                    {DISPLAY[bulkTierCategory] ?? bulkTierCategory} — pick tier
+                  </p>
+                  {[1, 2, 3].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => bulkSetTier(bulkTierCategory, t)}
+                      className="w-full text-left px-2 py-1 rounded text-xs font-mono hover:bg-accent"
+                    >
+                      Tier {t}
+                    </button>
+                  ))}
                   <button
-                    key={t}
-                    onClick={() => bulkSetTier(t)}
-                    className="w-full text-left px-2 py-1 rounded text-xs font-mono hover:bg-accent"
+                    onClick={() => setBulkTierCategory(null)}
+                    className="w-full text-left px-2 py-1 rounded text-[10px] font-mono text-muted-foreground hover:bg-accent"
                   >
-                    Tier {t}
+                    ← Back
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
 

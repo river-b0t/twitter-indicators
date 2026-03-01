@@ -13,10 +13,11 @@ export async function POST(request: NextRequest) {
     ids: string[]
     action: "delete" | "add-categories" | "remove-categories" | "set-tier"
     categories?: string[]
+    category?: string
     tier?: number
   }
 
-  const { ids, action, categories, tier } = body
+  const { ids, action, categories, category, tier } = body
 
   if (!ids?.length) return NextResponse.json({ error: "No IDs provided" }, { status: 400 })
 
@@ -56,10 +57,23 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "set-tier") {
+    if (!category) return NextResponse.json({ error: "category required" }, { status: 400 })
     if (tier === undefined || ![1, 2, 3].includes(tier)) {
       return NextResponse.json({ error: "tier must be 1, 2, or 3" }, { status: 400 })
     }
-    await prisma.twitterAccount.updateMany({ where: { id: { in: ids } }, data: { tier } })
+    const existing = await prisma.twitterAccount.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, tierMap: true },
+    })
+    await prisma.$transaction(
+      existing.map((acc) => {
+        const currentMap = (acc.tierMap as Record<string, number>) ?? {}
+        return prisma.twitterAccount.update({
+          where: { id: acc.id },
+          data: { tierMap: { ...currentMap, [category]: tier } },
+        })
+      })
+    )
     return NextResponse.json({ ok: true })
   }
 

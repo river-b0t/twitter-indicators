@@ -9,6 +9,7 @@ import { format, startOfDay, parseISO } from "date-fns"
 import { Suspense } from "react"
 import type { TickerData } from "@/lib/finnhub"
 import { aggregateDigests } from "@/lib/summary"
+import { getTierForCategory, getBestTier } from "@/lib/tiers"
 
 interface Props {
   searchParams: Promise<{ date?: string; category?: string; tier?: string }>
@@ -25,17 +26,38 @@ export default async function DashboardPage({ searchParams }: Props) {
     where: {
       active: true,
       ...(category !== "all" ? { categories: { hasSome: [category] } } : {}),
-      ...(tier !== "all" ? { tier: parseInt(tier) } : {}),
     },
     include: {
       digests: { where: { date }, take: 1 },
       tweets: { where: { postedAt: { gte: date } }, select: { id: true } },
     },
-    orderBy: [{ tier: "asc" }, { handle: "asc" }],
+    orderBy: { handle: "asc" },
+  })
+
+  // Filter by tier in JS (tierMap is JSON, not efficiently filterable in Prisma)
+  const filteredAccounts = tier === "all"
+    ? accounts
+    : accounts.filter((a) => {
+        const effectiveTier = category === "all"
+          ? getBestTier(a.tierMap, a.categories)
+          : getTierForCategory(a.tierMap, category)
+        return effectiveTier === parseInt(tier)
+      })
+
+  // Sort by effective tier ASC, then handle ASC
+  const sortedAccounts = [...filteredAccounts].sort((a, b) => {
+    const aTier = category === "all"
+      ? getBestTier(a.tierMap, a.categories)
+      : getTierForCategory(a.tierMap, category)
+    const bTier = category === "all"
+      ? getBestTier(b.tierMap, b.categories)
+      : getTierForCategory(b.tierMap, category)
+    if (aTier !== bTier) return aTier - bTier
+    return a.handle.localeCompare(b.handle)
   })
 
   // Build category summary from fetched digests (no extra query needed)
-  const digestInputs = accounts.map((a) => ({
+  const digestInputs = sortedAccounts.map((a) => ({
     summary: a.digests[0]?.summary ?? null,
     sentiment: (a.digests[0]?.sentiment as string | null) ?? null,
     tickers: a.digests[0]?.tickers ?? [],
@@ -70,11 +92,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         </Suspense>
       </div>
 
-      {accounts.length === 0 ? (
+      {sortedAccounts.length === 0 ? (
         <p className="text-muted-foreground text-sm">No accounts found. Add some in Settings.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {accounts.map((account) => {
+          {sortedAccounts.map((account) => {
             const digest = account.digests[0]
             return (
               <AccountCard

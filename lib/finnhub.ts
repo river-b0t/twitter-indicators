@@ -1,5 +1,27 @@
 // lib/finnhub.ts
 
+// Maps common AI-generated ticker names to correct Finnhub symbols.
+// Crypto needs exchange prefix; commodities map to liquid ETF proxies.
+const SYMBOL_MAP: Record<string, string> = {
+  BTC: "BINANCE:BTCUSDT",
+  ETH: "BINANCE:ETHUSDT",
+  SOL: "BINANCE:SOLUSDT",
+  XRP: "BINANCE:XRPUSDT",
+  DOGE: "BINANCE:DOGEUSDT",
+  ADA: "BINANCE:ADAUSDT",
+  AVAX: "BINANCE:AVAXUSDT",
+  LINK: "BINANCE:LINKUSDT",
+  DOT: "BINANCE:DOTUSDT",
+  MATIC: "BINANCE:MATICUSDT",
+  POL: "BINANCE:POLUSDT",
+  BNB: "BINANCE:BNBUSDT",
+  LTC: "BINANCE:LTCUSDT",
+  BCH: "BINANCE:BCHUSDT",
+  GOLD: "GLD",   // SPDR Gold Shares ETF
+  SILVER: "SLV", // iShares Silver Trust ETF
+  OIL: "USO",    // US Oil Fund ETF
+}
+
 export interface TickerEntry {
   price?: number
   change?: number   // daily % change, e.g. 2.4 means +2.4%
@@ -22,8 +44,10 @@ export async function fetchTickerPrices(tickers: string[]): Promise<TickerData> 
     return Object.fromEntries(tickers.map((t) => [t, { resolved: false }]))
   }
 
+  const resolved = tickers.map((t) => SYMBOL_MAP[t.toUpperCase()] ?? t)
+
   const results = await Promise.allSettled(
-    tickers.map((ticker) => fetchOne(ticker, apiKey))
+    resolved.map((symbol) => fetchOne(symbol, apiKey))
   )
 
   const data: TickerData = {}

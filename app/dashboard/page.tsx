@@ -6,7 +6,7 @@ import { RefreshButton } from "@/components/refresh-button"
 import { SummaryBox } from "@/components/summary-box"
 import { DailySummaryPanel } from "@/components/DailySummaryPanel"
 import { DatePicker } from "@/components/date-picker"
-import { format, startOfDay, parseISO } from "date-fns"
+import { format, startOfDay, parseISO, addDays, subDays } from "date-fns"
 import { Suspense } from "react"
 import type { TickerData } from "@/lib/finnhub"
 import { aggregateDigests } from "@/lib/summary"
@@ -30,7 +30,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     },
     include: {
       digests: { where: { date }, take: 1 },
-      tweets: { where: { postedAt: { gte: date } }, select: { id: true } },
+      tweets: { where: { postedAt: { gte: subDays(date, 1), lt: addDays(date, 1) } }, select: { id: true } },
     },
     orderBy: { handle: "asc" },
   })
@@ -99,30 +99,52 @@ export default async function DashboardPage({ searchParams }: Props) {
         </Suspense>
       </div>
 
-      {sortedAccounts.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No accounts found. Add some in Settings.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedAccounts.map((account) => {
-            const digest = account.digests[0]
-            return (
-              <AccountCard
-                key={account.id}
-                handle={account.handle}
-                displayName={account.displayName}
-                categories={account.categories}
-                summary={digest?.summary ?? null}
-                sentiment={digest?.sentiment ?? null}
-                tickers={digest?.tickers ?? []}
-                tickerData={digest?.tickerData as TickerData | null}
-                tweetCount={account.tweets.length}
-                date={dateStr}
-                status={digest?.status ?? "pending"}
-              />
-            )
-          })}
-        </div>
-      )}
+      {(() => {
+        const accountsWithContent = sortedAccounts.filter(
+          (a) => a.digests[0]?.status === "complete" || a.tweets.length > 0
+        )
+        const accountsWithoutContent = sortedAccounts.filter(
+          (a) => a.digests[0]?.status !== "complete" && a.tweets.length === 0
+        )
+        return accountsWithContent.length === 0 && accountsWithoutContent.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No accounts found. Add some in Settings.</p>
+        ) : (
+          <>
+            {accountsWithContent.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {accountsWithContent.map((account) => {
+                  const digest = account.digests[0]
+                  return (
+                    <AccountCard
+                      key={account.id}
+                      handle={account.handle}
+                      displayName={account.displayName}
+                      categories={account.categories}
+                      summary={digest?.summary ?? null}
+                      sentiment={digest?.sentiment ?? null}
+                      tickers={digest?.tickers ?? []}
+                      tickerData={digest?.tickerData as TickerData | null}
+                      tweetCount={account.tweets.length}
+                      date={dateStr}
+                      status={digest?.status ?? "pending"}
+                    />
+                  )
+                })}
+              </div>
+            )}
+            {accountsWithoutContent.length > 0 && (
+              <div className="mt-6">
+                <p className="font-mono text-xs text-muted-foreground tracking-widest uppercase mb-2">
+                  No tweets today ({accountsWithoutContent.length})
+                </p>
+                <p className="font-mono text-xs text-muted-foreground leading-relaxed">
+                  {accountsWithoutContent.map((a) => `@${a.handle}`).join(", ")}
+                </p>
+              </div>
+            )}
+          </>
+        )
+      })()}
     </div>
   )
 }

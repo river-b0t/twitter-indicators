@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
-import { format, startOfDay, endOfDay, parseISO, subDays } from "date-fns"
+import { format, startOfDay, parseISO, subDays, addDays } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { TickerBadge } from "@/components/ticker-badge"
 import type { TickerData } from "@/lib/finnhub"
@@ -40,7 +40,7 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
     where: { handle },
     include: {
       tweets: {
-        where: { postedAt: { gte: date, lte: endOfDay(date) } },
+        where: { postedAt: { gte: subDays(date, 1), lt: addDays(date, 1) } },
         orderBy: { postedAt: "asc" },
       },
       digests: { where: { date }, take: 1 },

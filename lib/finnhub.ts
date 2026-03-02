@@ -3,6 +3,7 @@
 // Maps common AI-generated ticker names to correct Finnhub symbols.
 // Crypto needs exchange prefix; commodities map to liquid ETF proxies.
 const SYMBOL_MAP: Record<string, string> = {
+  // Major crypto — Binance
   BTC: "BINANCE:BTCUSDT",
   ETH: "BINANCE:ETHUSDT",
   SOL: "BINANCE:SOLUSDT",
@@ -17,10 +18,50 @@ const SYMBOL_MAP: Record<string, string> = {
   BNB: "BINANCE:BNBUSDT",
   LTC: "BINANCE:LTCUSDT",
   BCH: "BINANCE:BCHUSDT",
-  GOLD: "GLD",   // SPDR Gold Shares ETF
-  SILVER: "SLV", // iShares Silver Trust ETF
-  OIL: "USO",    // US Oil Fund ETF
+  SUI: "BINANCE:SUIUSDT",
+  APT: "BINANCE:APTUSDT",
+  ARB: "BINANCE:ARBUSDT",
+  OP: "BINANCE:OPUSDT",
+  TON: "BINANCE:TONUSDT",
+  TAO: "BINANCE:TAOUSDT",
+  HYPE: "BINANCE:HYPEUSDT",
+  // Stocks + ETFs — Finnhub direct
+  SPY: "SPY",
+  QQQ: "QQQ",
+  TLT: "TLT",
+  GLD: "GLD",
+  SLV: "SLV",
+  USO: "USO",
+  UUP: "UUP",   // Dollar index ETF
+  NVDA: "NVDA",
+  TSLA: "TSLA",
+  AAPL: "AAPL",
+  META: "META",
+  GOOGL: "GOOGL",
+  AMZN: "AMZN",
+  MSFT: "MSFT",
+  COIN: "COIN",
+  MSTR: "MSTR",
+  // Commodity ETF proxies
+  GOLD: "GLD",
+  SILVER: "SLV",
+  OIL: "USO",
+  XAU: "GLD",    // Gold spot → GLD proxy
+  // Index/futures proxies via ETFs
+  DXY: "UUP",   // Dollar index → dollar ETF
+  NQ: "QQQ",    // Nasdaq futures → QQQ proxy
+  ES: "SPY",    // S&P futures → SPY proxy
+  SPX: "SPY",   // S&P 500 → SPY proxy
 }
+
+// Words that Gemini sometimes extracts as tickers but aren't traded assets
+const SKIP_TICKERS = new Set([
+  "CRYPTO", "DEFI", "NFTS", "NFT", "WEB3", "ALTCOINS", "ALTS",
+  "IRAN", "CHINA", "RUSSIA", "UKRAINE", "US", "USA", "EU",
+  "COMMODITIES", "MARKETS", "STOCKS", "BONDS", "EQUITIES",
+  "FED", "FOMC", "SEC", "ETF", "DCA", "ATH", "ATL", "FOMO", "FUD",
+  "AI", "ML", "API", "USD", "EUR", "GBP",
+])
 
 export interface TickerEntry {
   price?: number
@@ -39,18 +80,18 @@ export async function fetchTickerPrices(tickers: string[]): Promise<TickerData> 
   if (tickers.length === 0) return {}
 
   const apiKey = process.env.FINNHUB_API_KEY
-
   const data: TickerData = {}
 
-  await Promise.allSettled(tickers.map(async (ticker) => {
+  // Filter out non-tickers
+  const validTickers = tickers.filter((t) => !SKIP_TICKERS.has(t.toUpperCase()))
+
+  await Promise.allSettled(validTickers.map(async (ticker) => {
     const upper = ticker.toUpperCase()
     const mapped = SYMBOL_MAP[upper]
 
     if (mapped && apiKey) {
-      // Known symbol — use Finnhub
       data[ticker] = await fetchOne(mapped, apiKey).catch(() => ({ resolved: false }))
     } else {
-      // Unknown symbol — try DexScreener
       data[ticker] = await fetchDexScreener(ticker).catch(() => ({ resolved: false }))
     }
   }))

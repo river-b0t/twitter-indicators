@@ -32,8 +32,44 @@ export async function runDigestPipeline(date: Date = new Date()) {
     orderBy: { id: "asc" },
   })
 
-  // No accounts left to process this run
+  // No accounts left to process this run — still check if email needs sending
   if (batch.length === 0) {
+    const completedCount = await prisma.dailyDigest.count({
+      where: { date: targetDate, status: "complete" },
+    })
+    if (completedCount >= totalActive) {
+      const alreadySent = await prisma.digestEmail.findFirst({
+        where: { date: targetDate, status: "sent" },
+      })
+      if (!alreadySent) {
+        const completedDigests = await prisma.dailyDigest.findMany({
+          where: { date: targetDate, status: "complete" },
+          include: { account: true },
+        })
+        if (completedDigests.length > 0) {
+          const { sendDailyDigestEmail } = await import("./email")
+          const emailPayload = completedDigests.map((d) => ({
+            handle: d.account.handle,
+            displayName: d.account.displayName,
+            categories: d.account.categories,
+            summary: d.summary!,
+            sentiment: d.sentiment!,
+            tickers: d.tickers,
+            tickerData: d.tickerData as Record<string, { price?: number; change?: number; resolved: boolean }> | undefined,
+          }))
+          try {
+            await sendDailyDigestEmail(targetDate, emailPayload)
+            await prisma.digestEmail.create({
+              data: { date: targetDate, sentAt: new Date(), status: "sent" },
+            })
+          } catch (error) {
+            await prisma.digestEmail.create({
+              data: { date: targetDate, status: "failed", error: String(error) },
+            })
+          }
+        }
+      }
+    }
     return { batch: [], status: "no-op", message: "All accounts already processed today" }
   }
 

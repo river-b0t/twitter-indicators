@@ -12,7 +12,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const results = await runDigestPipeline()
+    const body = await request.json().catch(() => ({}))
+    const date = body.date ? new Date(body.date) : new Date()
+    const results = await runDigestPipeline(date)
     return NextResponse.json({ results })
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })

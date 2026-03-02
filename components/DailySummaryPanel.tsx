@@ -82,7 +82,7 @@ export async function DailySummaryPanel({ date, activeCategoryFilter }: Props) {
           </div>
         )}
 
-        {global && (
+        {global && global.tickers.length > 0 && (
           <div className="space-y-1">
             <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground">Top References</p>
             <div>

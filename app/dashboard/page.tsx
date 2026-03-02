@@ -4,6 +4,7 @@ import { CategoryFilter } from "@/components/category-filter"
 import { TierFilter } from "@/components/tier-filter"
 import { RefreshButton } from "@/components/refresh-button"
 import { SummaryBox } from "@/components/summary-box"
+import { DailySummaryPanel } from "@/components/DailySummaryPanel"
 import { DatePicker } from "@/components/date-picker"
 import { format, startOfDay, parseISO } from "date-fns"
 import { Suspense } from "react"
@@ -80,6 +81,8 @@ export default async function DashboardPage({ searchParams }: Props) {
         </Suspense>
         <RefreshButton />
       </div>
+
+      {category === "all" && <DailySummaryPanel date={date} activeCategoryFilter={category} />}
 
       <SummaryBox summary={categorySummary} />
 

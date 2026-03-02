@@ -86,12 +86,8 @@ export default async function DashboardPage({ searchParams }: Props) {
       </div>
 
       {(() => {
-        const accountsWithContent = sortedAccounts.filter(
-          (a) => a.digests[0]?.status === "complete" || a.tweets.length > 0
-        )
-        const accountsWithoutContent = sortedAccounts.filter(
-          (a) => a.digests[0]?.status !== "complete" && a.tweets.length === 0
-        )
+        const accountsWithContent = sortedAccounts.filter((a) => a.tweets.length > 0)
+        const accountsWithoutContent = sortedAccounts.filter((a) => a.tweets.length === 0)
         return accountsWithContent.length === 0 && accountsWithoutContent.length === 0 ? (
           <p className="text-muted-foreground text-sm">No accounts found. Add some in Settings.</p>
         ) : (

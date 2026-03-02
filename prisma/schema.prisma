@@ -79,6 +79,14 @@ model DigestEmail {
   error  String?
 }
 
+model DailySummary {
+  id      String   @id @default(cuid())
+  date    DateTime @db.Date
+  scope   String   // category slug ("traders","crypto",etc.) or "global"
+  content Json
+  @@unique([date, scope])
+}
+
 model AlertRule {
   id        String   @id @default(cuid())
   keyword   String

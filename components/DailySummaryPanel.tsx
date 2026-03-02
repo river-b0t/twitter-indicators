@@ -1,5 +1,7 @@
 // components/DailySummaryPanel.tsx
 import { prisma } from "@/lib/prisma"
+import { format } from "date-fns"
+import Link from "next/link"
 import type { CategorySummaryContent, GlobalSummaryContent, TickerConsensus } from "@/lib/summarizer"
 
 const CATEGORIES = ["traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"] as const
@@ -12,7 +14,9 @@ function fmtMentions(n: number) {
   return `${n} ref${n === 1 ? "" : "s"}`
 }
 
-function TickerRow({ t }: { t: TickerConsensus }) {
+function TickerRow({ t, dateStr }: { t: TickerConsensus; dateStr: string }) {
+  const contrarianHandle = t.contrarian ? /@(\w+)/.exec(t.contrarian)?.[1] : null
+
   return (
     <div className="py-1.5 border-b border-border/40 last:border-0">
       <div className="flex items-baseline gap-3">
@@ -22,7 +26,15 @@ function TickerRow({ t }: { t: TickerConsensus }) {
       </div>
       {t.contrarian && (
         <p className="text-xs text-amber-400/80 ml-[7.5rem] mt-0.5 leading-relaxed">
-          ⚠ {t.contrarian}
+          {"⚠ "}{t.contrarian}
+          {contrarianHandle && (
+            <Link
+              href={`/digest/${contrarianHandle}?date=${dateStr}`}
+              className="ml-2 font-mono text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2"
+            >
+              view →
+            </Link>
+          )}
         </p>
       )}
     </div>
@@ -35,6 +47,7 @@ interface Props {
 }
 
 export async function DailySummaryPanel({ date, activeCategoryFilter }: Props) {
+  const dateStr = format(date, "yyyy-MM-dd")
   const summaries = await prisma.dailySummary.findMany({
     where: { date },
   })
@@ -73,7 +86,7 @@ export async function DailySummaryPanel({ date, activeCategoryFilter }: Props) {
                   <p className="text-sm leading-relaxed text-foreground/80">{c.text}</p>
                   {c.tickers?.length > 0 && (
                     <div className="mt-2">
-                      {c.tickers.map((t) => <TickerRow key={t.ticker} t={t} />)}
+                      {c.tickers.map((t) => <TickerRow key={t.ticker} t={t} dateStr={dateStr} />)}
                     </div>
                   )}
                 </>
@@ -86,7 +99,7 @@ export async function DailySummaryPanel({ date, activeCategoryFilter }: Props) {
           <div className="space-y-1">
             <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground">Top References</p>
             <div>
-              {global.tickers.map((t) => <TickerRow key={t.ticker} t={t} />)}
+              {global.tickers.map((t) => <TickerRow key={t.ticker} t={t} dateStr={dateStr} />)}
             </div>
           </div>
         )}
@@ -106,7 +119,7 @@ export async function DailySummaryPanel({ date, activeCategoryFilter }: Props) {
                       <p className="text-sm leading-relaxed text-foreground/80">{c.text}</p>
                       {c.tickers?.length > 0 && (
                         <div>
-                          {c.tickers.map((t) => <TickerRow key={t.ticker} t={t} />)}
+                          {c.tickers.map((t) => <TickerRow key={t.ticker} t={t} dateStr={dateStr} />)}
                         </div>
                       )}
                     </div>

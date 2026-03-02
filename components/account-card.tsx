@@ -50,7 +50,7 @@ export function AccountCard({
     : "border-l-transparent"
 
   return (
-    <Link href={`/dashboard/${handle}?date=${date}`}>
+    <Link href={`/digest/${handle}?date=${date}`}>
       <div
         className={`bg-card border border-border border-l-4 ${borderColor} rounded-lg p-4 cursor-pointer hover:bg-accent transition-colors h-full flex flex-col gap-3`}
       >

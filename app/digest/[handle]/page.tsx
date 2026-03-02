@@ -74,7 +74,7 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
       <div className="space-y-2">
         <div className="flex items-center gap-4">
           <Link
-            href={`/dashboard?date=${dateStr}`}
+            href={`/digest?date=${dateStr}`}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -96,7 +96,7 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
             {format(date, "EEE, MMM d yyyy").toUpperCase()}
           </p>
         }>
-          <DatePicker dateStr={dateStr} basePath={`/dashboard/${account.handle}`} />
+          <DatePicker dateStr={dateStr} basePath={`/digest/${account.handle}`} />
         </Suspense>
       </div>
 

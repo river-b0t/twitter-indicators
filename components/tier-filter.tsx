@@ -14,7 +14,7 @@ export function TierFilter({ active }: { active: string }) {
       } else {
         params.set("tier", tier)
       }
-      router.push(`/dashboard?${params.toString()}`)
+      router.push(`/digest?${params.toString()}`)
     },
     [router, searchParams]
   )

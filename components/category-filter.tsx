@@ -16,7 +16,7 @@ export function CategoryFilter({ active }: { active: string }) {
     const p = new URLSearchParams(params.toString())
     if (cat === "all") p.delete("category")
     else p.set("category", cat)
-    router.push(`/dashboard?${p.toString()}`)
+    router.push(`/digest?${p.toString()}`)
   }
 
   return (

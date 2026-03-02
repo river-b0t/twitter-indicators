@@ -3,13 +3,11 @@ import { AccountCard } from "@/components/account-card"
 import { CategoryFilter } from "@/components/category-filter"
 import { TierFilter } from "@/components/tier-filter"
 import { RefreshButton } from "@/components/refresh-button"
-import { SummaryBox } from "@/components/summary-box"
 import { DailySummaryPanel } from "@/components/DailySummaryPanel"
 import { DatePicker } from "@/components/date-picker"
 import { format, startOfDay, parseISO, addDays, subDays } from "date-fns"
 import { Suspense } from "react"
 import type { TickerData } from "@/lib/finnhub"
-import { aggregateDigests } from "@/lib/summary"
 import { getTierForCategory, getBestTier } from "@/lib/tiers"
 
 interface Props {
@@ -57,16 +55,6 @@ export default async function DashboardPage({ searchParams }: Props) {
     return a.handle.localeCompare(b.handle)
   })
 
-  // Build category summary from fetched digests (no extra query needed)
-  const digestInputs = sortedAccounts.map((a) => ({
-    summary: a.digests[0]?.summary ?? null,
-    sentiment: (a.digests[0]?.sentiment as string | null) ?? null,
-    tickers: a.digests[0]?.tickers ?? [],
-    tickerData: (a.digests[0]?.tickerData as TickerData | null) ?? null,
-    account: { handle: a.handle },
-  }))
-  const categorySummary = aggregateDigests(digestInputs)
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -87,8 +75,6 @@ export default async function DashboardPage({ searchParams }: Props) {
           <DailySummaryPanel date={date} activeCategoryFilter={category} />
         </Suspense>
       )}
-
-      <SummaryBox summary={categorySummary} />
 
       <div className="flex items-center gap-4 flex-wrap">
         <Suspense>

@@ -11,7 +11,7 @@ export function Nav() {
           Market Digest
         </span>
         <Link
-          href="/dashboard"
+          href="/digest"
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Digest

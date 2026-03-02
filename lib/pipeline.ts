@@ -62,6 +62,12 @@ export async function runDigestPipeline(date: Date = new Date()) {
             await prisma.digestEmail.create({
               data: { date: targetDate, sentAt: new Date(), status: "sent" },
             })
+            // Generate daily summaries (non-blocking)
+            import("./summarizer").then(({ generateDailySummaries }) =>
+              generateDailySummaries(targetDate).catch((err) =>
+                console.error("[pipeline] summarizer failed:", err)
+              )
+            )
           } catch (error) {
             await prisma.digestEmail.create({
               data: { date: targetDate, status: "failed", error: String(error) },
@@ -111,6 +117,12 @@ export async function runDigestPipeline(date: Date = new Date()) {
         await prisma.digestEmail.create({
           data: { date: targetDate, sentAt: new Date(), status: "sent" },
         })
+        // Generate daily summaries (non-blocking)
+        import("./summarizer").then(({ generateDailySummaries }) =>
+          generateDailySummaries(targetDate).catch((err) =>
+            console.error("[pipeline] summarizer failed:", err)
+          )
+        )
       } catch (error) {
         await prisma.digestEmail.create({
           data: { date: targetDate, status: "failed", error: String(error) },

@@ -57,8 +57,11 @@ export async function runDigestPipeline(date: Date = new Date()) {
             tickers: d.tickers,
             tickerData: d.tickerData as Record<string, { price?: number; change?: number; resolved: boolean }> | undefined,
           }))
+          const existingSummaries = (await prisma.dailySummary.findMany({
+            where: { date: targetDate },
+          })) as Array<{ scope: string; content: object }>
           try {
-            await sendDailyDigestEmail(targetDate, emailPayload)
+            await sendDailyDigestEmail(targetDate, emailPayload, existingSummaries)
             await prisma.digestEmail.create({
               data: { date: targetDate, sentAt: new Date(), status: "sent" },
             })
@@ -111,9 +114,12 @@ export async function runDigestPipeline(date: Date = new Date()) {
         tickers: d.tickers,
         tickerData: d.tickerData as Record<string, { price?: number; change?: number; resolved: boolean }> | undefined,
       }))
+      const existingSummaries = (await prisma.dailySummary.findMany({
+        where: { date: targetDate },
+      })) as Array<{ scope: string; content: object }>
 
       try {
-        await sendDailyDigestEmail(targetDate, emailPayload)
+        await sendDailyDigestEmail(targetDate, emailPayload, existingSummaries)
         await prisma.digestEmail.create({
           data: { date: targetDate, sentAt: new Date(), status: "sent" },
         })

@@ -82,7 +82,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         <RefreshButton />
       </div>
 
-      {category === "all" && <DailySummaryPanel date={date} activeCategoryFilter={category} />}
+      {category === "all" && (
+        <Suspense>
+          <DailySummaryPanel date={date} activeCategoryFilter={category} />
+        </Suspense>
+      )}
 
       <SummaryBox summary={categorySummary} />
 

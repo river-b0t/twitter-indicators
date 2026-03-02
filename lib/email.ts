@@ -14,7 +14,8 @@ export async function sendDailyDigestEmail(
     sentiment: string
     tickers: string[]
     tickerData?: Record<string, { price?: number; change?: number; resolved: boolean }>
-  }>
+  }>,
+  summaries?: Array<{ scope: string; content: object }>
 ) {
   const dateStr = format(date, "EEEE, MMMM d, yyyy")
   const dashboardUrl = `${process.env.NEXTAUTH_URL}/dashboard?date=${format(date, "yyyy-MM-dd")}`
@@ -23,6 +24,6 @@ export async function sendDailyDigestEmail(
     from: process.env.RESEND_FROM!,
     to: process.env.DIGEST_TO!,
     subject: `Market Digest — ${dateStr}`,
-    react: DigestEmail({ date: dateStr, digests, dashboardUrl }),
+    react: DigestEmail({ date: dateStr, digests, summaries, dashboardUrl }),
   })
 }

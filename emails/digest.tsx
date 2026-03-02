@@ -1,6 +1,7 @@
 import {
   Html, Head, Body, Container, Section, Text, Heading, Hr, Link
 } from "@react-email/components"
+import type { CategorySummaryContent, GlobalSummaryContent } from "@/lib/summarizer"
 
 interface AccountDigest {
   handle: string
@@ -16,6 +17,7 @@ interface DigestEmailProps {
   date: string
   digests: AccountDigest[]
   dashboardUrl: string
+  summaries?: Array<{ scope: string; content: object }>
 }
 
 const CATEGORIES = ["traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"]
@@ -27,7 +29,7 @@ const sentimentEmoji: Record<string, string> = {
   mixed: "↕️",
 }
 
-export function DigestEmail({ date, digests, dashboardUrl }: DigestEmailProps) {
+export function DigestEmail({ date, digests, dashboardUrl, summaries }: DigestEmailProps) {
   const sentimentCounts = digests.reduce((acc, d) => {
     acc[d.sentiment] = (acc[d.sentiment] ?? 0) + 1
     return acc
@@ -49,6 +51,38 @@ export function DigestEmail({ date, digests, dashboardUrl }: DigestEmailProps) {
           <Text style={{ fontSize: "14px" }}>
             {Object.entries(sentimentCounts).map(([s, n]) => `${sentimentEmoji[s] ?? ""} ${n} ${s}`).join(" · ")}
           </Text>
+
+          {(() => {
+            const globalRow = summaries?.find((s) => s.scope === "global")
+            if (!globalRow) return null
+            const g = globalRow.content as GlobalSummaryContent
+            if (!g.tickers?.length) return null
+            return (
+              <>
+                <Heading style={{ fontSize: "13px", color: "#374151", marginBottom: "4px" }}>TOP REFERENCES</Heading>
+                {g.tickers.map((t) => (
+                  <Text key={t.ticker} style={{ margin: "2px 0", fontSize: "12px" }}>
+                    <strong>{t.ticker}</strong> — {t.consensus}
+                    {t.contrarian ? ` ⚠ ${t.contrarian}` : ""}
+                  </Text>
+                ))}
+              </>
+            )
+          })()}
+
+          {CATEGORIES.map((cat) => {
+            const row = summaries?.find((s) => s.scope === cat)
+            if (!row) return null
+            const c = row.content as CategorySummaryContent
+            return (
+              <Section key={cat} style={{ marginBottom: "8px" }}>
+                <Heading style={{ fontSize: "13px", textTransform: "capitalize", color: "#374151" }}>
+                  {cat}
+                </Heading>
+                <Text style={{ fontSize: "13px", color: "#374151", margin: "0 0 8px" }}>{c.text}</Text>
+              </Section>
+            )
+          })}
 
           <Hr />
 

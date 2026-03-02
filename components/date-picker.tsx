@@ -6,7 +6,7 @@ import { format, parseISO } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-export function DatePicker({ dateStr }: { dateStr: string }) {
+export function DatePicker({ dateStr, basePath = "/dashboard" }: { dateStr: string; basePath?: string }) {
   const router = useRouter()
   const params = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -17,7 +17,7 @@ export function DatePicker({ dateStr }: { dateStr: string }) {
     if (!selected) return
     const p = new URLSearchParams(params.toString())
     p.set("date", format(selected, "yyyy-MM-dd"))
-    router.push(`/dashboard?${p.toString()}`)
+    router.push(`${basePath}?${p.toString()}`)
     setOpen(false)
   }
 

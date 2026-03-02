@@ -8,6 +8,8 @@ import Link from "next/link"
 import { ArrowLeft, ExternalLink, Heart, Repeat2 } from "lucide-react"
 import type { Tweet } from "@prisma/client"
 import { SentimentHistory } from "@/components/sentiment-history"
+import { Suspense } from "react"
+import { DatePicker } from "@/components/date-picker"
 
 const CATEGORY_DISPLAY: Partial<Record<string, string>> = { vc: "Crypto VC", tradfi: "TradFi" }
 
@@ -69,14 +71,14 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Back + header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href={`/dashboard?date=${dateStr}`}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/dashboard?date=${dateStr}`}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-mono text-lg text-foreground">@{account.handle}</h1>
             {account.categories.map((c) => (
@@ -88,10 +90,14 @@ export default async function DrilldownPage({ params, searchParams }: Props) {
               </span>
             ))}
           </div>
+        </div>
+        <Suspense fallback={
           <p className="font-mono text-xs text-muted-foreground tracking-wide">
             {format(date, "EEE, MMM d yyyy").toUpperCase()}
           </p>
-        </div>
+        }>
+          <DatePicker dateStr={dateStr} basePath={`/dashboard/${account.handle}`} />
+        </Suspense>
       </div>
 
       {/* Digest summary card */}

@@ -13,6 +13,7 @@ const DISPLAY: Partial<Record<string, string>> = { vc: "Crypto VC", tradfi: "Tra
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<any[]>([])
+  const [search, setSearch] = useState("")
   const [handle, setHandle] = useState("")
   const [displayName, setDisplayName] = useState("")
   const [primaryCategory, setPrimaryCategory] = useState("crypto")
@@ -159,6 +160,13 @@ export default function AccountsPage() {
     clearSelection()
   }
 
+  const visibleAccounts = search
+    ? accounts.filter((a) =>
+        a.handle.toLowerCase().includes(search.toLowerCase()) ||
+        (a.displayName ?? "").toLowerCase().includes(search.toLowerCase())
+      )
+    : accounts
+
   const allSelected = accounts.length > 0 && selected.size === accounts.length
 
   return (
@@ -205,6 +213,16 @@ export default function AccountsPage() {
         <Button onClick={addAccount}>Add Account</Button>
       </div>
 
+      {/* Search */}
+      {accounts.length > 0 && (
+        <Input
+          placeholder="Search accounts..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm font-mono text-sm"
+        />
+      )}
+
       {/* Select-all header row */}
       {accounts.length > 0 && (
         <div className="flex items-center gap-3 px-3 py-2 border-b border-border">
@@ -222,7 +240,7 @@ export default function AccountsPage() {
 
       {/* Account list */}
       <div className="space-y-2">
-        {accounts.map((account) => (
+        {visibleAccounts.map((account) => (
           <div
             key={account.id}
             className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${

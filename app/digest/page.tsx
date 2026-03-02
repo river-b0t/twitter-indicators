@@ -28,7 +28,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     },
     include: {
       digests: { where: { date }, take: 1 },
-      tweets: { where: { postedAt: { gte: subDays(date, 1), lt: addDays(date, 1) } }, select: { id: true } },
+      tweets: { where: { postedAt: { gte: subDays(date, 1), lt: addDays(date, 1) } }, select: { id: true, postedAt: true } },
     },
     orderBy: { handle: "asc" },
   })
@@ -43,15 +43,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         return effectiveTier === parseInt(tier)
       })
 
-  // Sort by effective tier ASC, then handle ASC
+  // Sort by most recent tweet DESC, then handle ASC
   const sortedAccounts = [...filteredAccounts].sort((a, b) => {
-    const aTier = category === "all"
-      ? getBestTier(a.tierMap, a.categories)
-      : getTierForCategory(a.tierMap, category)
-    const bTier = category === "all"
-      ? getBestTier(b.tierMap, b.categories)
-      : getTierForCategory(b.tierMap, category)
-    if (aTier !== bTier) return aTier - bTier
+    const aLatest = a.tweets.length > 0 ? Math.max(...a.tweets.map((t) => new Date(t.postedAt).getTime())) : 0
+    const bLatest = b.tweets.length > 0 ? Math.max(...b.tweets.map((t) => new Date(t.postedAt).getTime())) : 0
+    if (aLatest !== bLatest) return bLatest - aLatest
     return a.handle.localeCompare(b.handle)
   })
 

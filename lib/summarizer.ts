@@ -77,7 +77,7 @@ async function generateCategorySummary(
   )
 
   const accountLines = sorted.map((d) => {
-    const t = (d.account.tierMap as Record<string, number>)?.[category] ?? 2
+    const t = (d.account.tierMap as Record<string, number>)?.[category] ?? 3
     return `[Tier ${t}] @${d.account.handle}: ${d.summary}\nTickers: ${d.tickers.join(", ") || "none"}`
   }).join("\n\n")
 

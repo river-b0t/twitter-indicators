@@ -5,6 +5,8 @@ import { fetchTickerPrices } from "./finnhub"
 import { startOfDay, subDays } from "date-fns"
 
 const BATCH_SIZE = 5
+// Only send digest email at or after 16:00 UTC (8 AM PT)
+const EMAIL_SEND_HOUR_UTC = 16
 
 export async function runDigestPipeline(date: Date = new Date()) {
   const targetDate = startOfDay(date)
@@ -37,7 +39,7 @@ export async function runDigestPipeline(date: Date = new Date()) {
     const completedCount = await prisma.dailyDigest.count({
       where: { date: targetDate, status: "complete" },
     })
-    if (completedCount >= totalActive) {
+    if (completedCount >= totalActive && new Date().getUTCHours() >= EMAIL_SEND_HOUR_UTC) {
       const alreadySent = await prisma.digestEmail.findFirst({
         where: { date: targetDate, status: "sent" },
       })
@@ -91,7 +93,7 @@ export async function runDigestPipeline(date: Date = new Date()) {
     where: { date: targetDate, status: "complete" },
   })
 
-  const isLastBatch = completedCount >= totalActive
+  const isLastBatch = completedCount >= totalActive && new Date().getUTCHours() >= EMAIL_SEND_HOUR_UTC
   if (isLastBatch) {
     const completedDigests = await prisma.dailyDigest.findMany({
       where: { date: targetDate, status: "complete" },

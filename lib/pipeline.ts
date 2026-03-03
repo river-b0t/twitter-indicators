@@ -48,29 +48,29 @@ export async function runDigestPipeline(date: Date = new Date()) {
         })
         if (completedDigests.length > 0) {
           const { sendDailyDigestEmail } = await import("./email")
+          const { generateDailySummaries } = await import("./summarizer")
+          // Generate summaries first so they're available in the email
+          await generateDailySummaries(targetDate).catch((err) =>
+            console.error("[pipeline] summarizer failed:", err)
+          )
           const emailPayload = completedDigests.map((d) => ({
             handle: d.account.handle,
             displayName: d.account.displayName,
             categories: d.account.categories,
+            tierMap: d.account.tierMap as Record<string, number> | undefined,
             summary: d.summary!,
             sentiment: d.sentiment!,
             tickers: d.tickers,
             tickerData: d.tickerData as Record<string, { price?: number; change?: number; resolved: boolean }> | undefined,
           }))
-          const existingSummaries = (await prisma.dailySummary.findMany({
+          const freshSummaries = (await prisma.dailySummary.findMany({
             where: { date: targetDate },
           })) as Array<{ scope: string; content: object }>
           try {
-            await sendDailyDigestEmail(targetDate, emailPayload, existingSummaries)
+            await sendDailyDigestEmail(targetDate, emailPayload, freshSummaries)
             await prisma.digestEmail.create({
               data: { date: targetDate, sentAt: new Date(), status: "sent" },
             })
-            // Generate daily summaries (non-blocking)
-            import("./summarizer").then(({ generateDailySummaries }) =>
-              generateDailySummaries(targetDate).catch((err) =>
-                console.error("[pipeline] summarizer failed:", err)
-              )
-            )
           } catch (error) {
             await prisma.digestEmail.create({
               data: { date: targetDate, status: "failed", error: String(error) },
@@ -105,30 +105,30 @@ export async function runDigestPipeline(date: Date = new Date()) {
 
     if (!alreadySent && completedDigests.length > 0) {
       const { sendDailyDigestEmail } = await import("./email")
+      const { generateDailySummaries } = await import("./summarizer")
+      // Generate summaries first so they're available in the email
+      await generateDailySummaries(targetDate).catch((err) =>
+        console.error("[pipeline] summarizer failed:", err)
+      )
       const emailPayload = completedDigests.map((d) => ({
         handle: d.account.handle,
         displayName: d.account.displayName,
         categories: d.account.categories,
+        tierMap: d.account.tierMap as Record<string, number> | undefined,
         summary: d.summary!,
         sentiment: d.sentiment!,
         tickers: d.tickers,
         tickerData: d.tickerData as Record<string, { price?: number; change?: number; resolved: boolean }> | undefined,
       }))
-      const existingSummaries = (await prisma.dailySummary.findMany({
+      const freshSummaries = (await prisma.dailySummary.findMany({
         where: { date: targetDate },
       })) as Array<{ scope: string; content: object }>
 
       try {
-        await sendDailyDigestEmail(targetDate, emailPayload, existingSummaries)
+        await sendDailyDigestEmail(targetDate, emailPayload, freshSummaries)
         await prisma.digestEmail.create({
           data: { date: targetDate, sentAt: new Date(), status: "sent" },
         })
-        // Generate daily summaries (non-blocking)
-        import("./summarizer").then(({ generateDailySummaries }) =>
-          generateDailySummaries(targetDate).catch((err) =>
-            console.error("[pipeline] summarizer failed:", err)
-          )
-        )
       } catch (error) {
         await prisma.digestEmail.create({
           data: { date: targetDate, status: "failed", error: String(error) },

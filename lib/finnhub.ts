@@ -1,7 +1,7 @@
 // lib/finnhub.ts
 
 // Maps common AI-generated ticker names to correct Finnhub symbols.
-// Crypto needs exchange prefix; commodities map to liquid ETF proxies.
+// Crypto needs exchange prefix; stocks/ETFs use Finnhub direct; commodities use OANDA.
 const SYMBOL_MAP: Record<string, string> = {
   // Major crypto — Binance
   BTC: "BINANCE:BTCUSDT",
@@ -24,7 +24,7 @@ const SYMBOL_MAP: Record<string, string> = {
   OP: "BINANCE:OPUSDT",
   TON: "BINANCE:TONUSDT",
   TAO: "BINANCE:TAOUSDT",
-  HYPE: "BINANCE:HYPEUSDT",
+  NEAR: "BINANCE:NEARUSDT",
   // Stocks + ETFs — Finnhub direct
   SPY: "SPY",
   QQQ: "QQQ",
@@ -32,35 +32,49 @@ const SYMBOL_MAP: Record<string, string> = {
   GLD: "GLD",
   SLV: "SLV",
   USO: "USO",
-  UUP: "UUP",   // Dollar index ETF
+  UUP: "UUP",
+  SMH: "SMH",
+  VOO: "VOO",
+  VXUS: "VXUS",
   NVDA: "NVDA",
   TSLA: "TSLA",
   AAPL: "AAPL",
   META: "META",
   GOOGL: "GOOGL",
+  GOOG: "GOOGL",
   AMZN: "AMZN",
   MSFT: "MSFT",
   COIN: "COIN",
   MSTR: "MSTR",
-  // Commodity ETF proxies
+  PLTR: "PLTR",
+  HOOD: "HOOD",
+  MU: "MU",
+  OXY: "OXY",
+  XOM: "XOM",
+  ARE: "ARE",
+  // Commodity spot prices via OANDA
+  XAU: "OANDA:XAU_USD",   // Gold spot
+  XAG: "OANDA:XAG_USD",   // Silver spot
+  // Commodity/index ETF proxies
   GOLD: "GLD",
   SILVER: "SLV",
   OIL: "USO",
-  XAU: "GLD",    // Gold spot → GLD proxy
-  // Index/futures proxies via ETFs
+  CL: "USO",    // WTI crude futures → USO proxy
   DXY: "UUP",   // Dollar index → dollar ETF
   NQ: "QQQ",    // Nasdaq futures → QQQ proxy
+  NDX: "QQQ",   // Nasdaq 100 index → QQQ proxy
   ES: "SPY",    // S&P futures → SPY proxy
   SPX: "SPY",   // S&P 500 → SPY proxy
 }
 
-// Words that Gemini sometimes extracts as tickers but aren't traded assets
+// Tickers to skip entirely — no price available or not meaningful to display
 const SKIP_TICKERS = new Set([
   "CRYPTO", "DEFI", "NFTS", "NFT", "WEB3", "ALTCOINS", "ALTS",
   "IRAN", "CHINA", "RUSSIA", "UKRAINE", "US", "USA", "EU",
   "COMMODITIES", "MARKETS", "STOCKS", "BONDS", "EQUITIES",
   "FED", "FOMC", "SEC", "ETF", "DCA", "ATH", "ATL", "FOMO", "FUD",
   "AI", "ML", "API", "USD", "EUR", "GBP",
+  "BASE",  // Base chain — no tradeable token
 ])
 
 export interface TickerEntry {

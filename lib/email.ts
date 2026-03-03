@@ -10,6 +10,7 @@ export async function sendDailyDigestEmail(
     handle: string
     displayName: string
     categories: string[]
+    tierMap?: Record<string, number>
     summary: string
     sentiment: string
     tickers: string[]
@@ -18,12 +19,12 @@ export async function sendDailyDigestEmail(
   summaries?: Array<{ scope: string; content: object }>
 ) {
   const dateStr = format(date, "EEEE, MMMM d, yyyy")
-  const dashboardUrl = `${process.env.NEXTAUTH_URL}/dashboard?date=${format(date, "yyyy-MM-dd")}`
+  const dashboardUrl = `${process.env.NEXTAUTH_URL}/digest?date=${format(date, "yyyy-MM-dd")}`
 
   await resend.emails.send({
     from: process.env.RESEND_FROM!,
     to: process.env.DIGEST_TO!,
-    subject: `Market Digest — ${dateStr}`,
+    subject: `Timeline Digest — ${dateStr}`,
     react: DigestEmail({ date: dateStr, digests, summaries, dashboardUrl }),
   })
 }

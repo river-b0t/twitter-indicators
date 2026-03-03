@@ -7,7 +7,8 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
 
 const CATEGORIES = ["traders", "crypto", "onchain", "vc", "tradfi", "thematic", "builders"] as const
 
-const TIER_WEIGHT: Record<number, number> = { 1: 3, 2: 2, 3: 1 }
+// Approximate 50/30/20 weighting across tiers
+const TIER_WEIGHT: Record<number, number> = { 1: 5, 2: 3, 3: 2 }
 
 function tierWeight(tierMap: unknown, category: string): number {
   if (!tierMap || typeof tierMap !== "object" || Array.isArray(tierMap)) return 1
@@ -86,7 +87,7 @@ Accounts are listed by tier (tier 1 = highest signal, weight most heavily).
 
 ${accountLines}
 
-Write a 1-2 paragraph synthesis that captures key themes and views, calls out specific tickers and the prevailing view on each, and weights tier 1 accounts more heavily than tier 2/3.
+Write a 1-2 paragraph synthesis that captures key themes and views, calls out specific tickers and the prevailing view on each. Weight tier 1 accounts approximately 50%, tier 2 approximately 30%, tier 3 approximately 20%.
 
 Then respond with JSON only (no markdown):
 {"text":"...","tickers":[{"ticker":"BTC","weightedMentions":5,"consensus":"bullish — breakout likely","contrarian":"@handle sees rejection at resistance"}]}
